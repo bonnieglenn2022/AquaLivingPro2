@@ -31,6 +31,7 @@ import {
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Project, InsertProject, Customer } from "@shared/schema";
+import { TodoList } from "@/components/project/TodoList";
 
 export default function Projects() {
   const { toast } = useToast();
@@ -565,6 +566,9 @@ export default function Projects() {
                       </CardContent>
                     </Card>
                   )}
+
+                  {/* Project Todos */}
+                  <TodoList projectId={selectedProject.id} />
 
                   {/* Action Buttons */}
                   <div className="flex justify-end gap-2 pt-4 border-t">

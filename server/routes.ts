@@ -116,6 +116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const project = await storage.createProject(projectData);
           
+          // Create default todos for the new project
+          await storage.createDefaultTodos(project.id);
+          
           // Create activity log for project creation
           await storage.createActivity({
             type: "project_created",
@@ -182,6 +185,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const projectData = insertProjectSchema.parse(req.body);
       const project = await storage.createProject(projectData);
 
+      // Create default todos for the new project
+      await storage.createDefaultTodos(project.id);
+
       // Create activity log
       await storage.createActivity({
         projectId: project.id,
@@ -197,6 +203,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating project:", error);
       res.status(500).json({ message: "Failed to create project" });
+    }
+  });
+
+  // Project Todo routes
+  app.get('/api/projects/:id/todos', isAuthenticated, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const todos = await storage.getProjectTodos(projectId);
+      res.json(todos);
+    } catch (error) {
+      console.error("Error getting project todos:", error);
+      res.status(500).json({ message: "Failed to get project todos" });
+    }
+  });
+
+  app.post('/api/projects/:id/todos', isAuthenticated, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const todoData = { ...req.body, projectId };
+      const todo = await storage.createProjectTodo(todoData);
+      res.status(201).json(todo);
+    } catch (error) {
+      console.error("Error creating project todo:", error);
+      res.status(500).json({ message: "Failed to create project todo" });
+    }
+  });
+
+  app.put('/api/todos/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      // If marking as completed, add completion info
+      if (updates.completed && !updates.completedAt) {
+        updates.completedAt = new Date();
+        updates.completedBy = (req.user as any)?.claims?.sub || "system";
+      } else if (!updates.completed) {
+        updates.completedAt = null;
+        updates.completedBy = null;
+      }
+      
+      const todo = await storage.updateProjectTodo(id, updates);
+      res.json(todo);
+    } catch (error) {
+      console.error("Error updating todo:", error);
+      res.status(500).json({ message: "Failed to update todo" });
+    }
+  });
+
+  app.delete('/api/todos/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProjectTodo(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting todo:", error);
+      res.status(500).json({ message: "Failed to delete todo" });
     }
   });
 

@@ -67,6 +67,20 @@ export const projects = pgTable("projects", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Project todos table
+export const projectTodos = pgTable("project_todos", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  order: integer("order").notNull(),
+  completed: boolean("completed").default(false),
+  completedAt: timestamp("completed_at"),
+  completedBy: text("completed_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Estimates table
 export const estimates = pgTable("estimates", {
   id: serial("id").primaryKey(),
@@ -211,6 +225,14 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   documents: many(documents),
   changeOrders: many(changeOrders),
   activities: many(activities),
+  todos: many(projectTodos),
+}));
+
+export const projectTodosRelations = relations(projectTodos, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectTodos.projectId],
+    references: [projects.id],
+  }),
 }));
 
 export const estimatesRelations = relations(estimates, ({ one, many }) => ({
@@ -349,6 +371,12 @@ export const insertActivitySchema = createInsertSchema(activities).omit({
   createdAt: true,
 });
 
+export const insertProjectTodoSchema = createInsertSchema(projectTodos).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -372,3 +400,5 @@ export type ChangeOrder = typeof changeOrders.$inferSelect;
 export type InsertChangeOrder = z.infer<typeof insertChangeOrderSchema>;
 export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type ProjectTodo = typeof projectTodos.$inferSelect;
+export type InsertProjectTodo = z.infer<typeof insertProjectTodoSchema>;

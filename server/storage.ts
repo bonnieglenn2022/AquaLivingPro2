@@ -11,6 +11,7 @@ import {
   documents,
   changeOrders,
   activities,
+  projectTodos,
   type User,
   type UpsertUser,
   type Customer,
@@ -33,6 +34,8 @@ import {
   type InsertChangeOrder,
   type Activity,
   type InsertActivity,
+  type ProjectTodo,
+  type InsertProjectTodo,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, like, count } from "drizzle-orm";
@@ -114,6 +117,13 @@ export interface IStorage {
     leads: number;
     tasks: number;
   }>;
+
+  // Project Todo operations
+  getProjectTodos(projectId: number): Promise<ProjectTodo[]>;
+  createProjectTodo(todo: InsertProjectTodo): Promise<ProjectTodo>;
+  updateProjectTodo(id: number, updates: Partial<InsertProjectTodo>): Promise<ProjectTodo>;
+  deleteProjectTodo(id: number): Promise<void>;
+  createDefaultTodos(projectId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -457,6 +467,67 @@ export class DatabaseStorage implements IStorage {
       leads: leadsResult.count,
       tasks: tasksResult.count,
     };
+  }
+
+  // Project Todo operations
+  async getProjectTodos(projectId: number): Promise<ProjectTodo[]> {
+    return await db.select().from(projectTodos).where(eq(projectTodos.projectId, projectId)).orderBy(projectTodos.order);
+  }
+
+  async createProjectTodo(todo: InsertProjectTodo): Promise<ProjectTodo> {
+    const [newTodo] = await db.insert(projectTodos).values(todo).returning();
+    return newTodo;
+  }
+
+  async updateProjectTodo(id: number, updates: Partial<InsertProjectTodo>): Promise<ProjectTodo> {
+    const [updatedTodo] = await db
+      .update(projectTodos)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(projectTodos.id, id))
+      .returning();
+    return updatedTodo;
+  }
+
+  async deleteProjectTodo(id: number): Promise<void> {
+    await db.delete(projectTodos).where(eq(projectTodos.id, id));
+  }
+
+  async createDefaultTodos(projectId: number): Promise<void> {
+    const defaultTodos = [
+      { title: "Customer Deposit", description: "Collect deposit from customer", order: 1 },
+      { title: "Submit HOA", description: "Submit HOA application", order: 2 },
+      { title: "Submit Permit", description: "Submit permit application", order: 3 },
+      { title: "HOA Approval", description: "Receive HOA approval", order: 4 },
+      { title: "Permit Approval", description: "Receive permit approval", order: 5 },
+      { title: "Order 811", description: "Order 811 utility marking", order: 6 },
+      { title: "Neighbor Access Agreement", description: "Get neighbor access agreement", order: 7 },
+      { title: "Signed Site Plan", description: "Get signed site plan", order: 8 },
+      { title: "Advise Customer about Communication Line Cut", description: "Inform customer about communication line cut", order: 9 },
+      { title: "811 Refresh", description: "Refresh 811 utility marking", order: 10 },
+      { title: "Material Selections", description: "Complete material selections", order: 11 },
+      { title: "Schedule Excavation", description: "Schedule excavation work", order: 12 },
+      { title: "Order Stub Out", description: "Order stub out materials", order: 13 },
+      { title: "Schedule Rebar", description: "Schedule rebar installation", order: 14 },
+      { title: "Schedule Gunite", description: "Schedule gunite application", order: 15 },
+      { title: "Order Equipment", description: "Order pool equipment", order: 16 },
+      { title: "Schedule Gunite Cleanup", description: "Schedule gunite cleanup", order: 17 },
+      { title: "Schedule Long Plumb", description: "Schedule long plumb work", order: 18 },
+      { title: "Schedule Tile & Coping", description: "Schedule tile and coping installation", order: 19 },
+      { title: "Schedule Decking", description: "Schedule decking installation", order: 20 },
+      { title: "Schedule Final Cleanup", description: "Schedule final cleanup", order: 21 },
+      { title: "Schedule Plaster", description: "Schedule plaster application", order: 22 },
+      { title: "Order Start Up", description: "Order start up service", order: 23 },
+      { title: "Confirm Pool is Full", description: "Confirm pool is filled", order: 24 },
+      { title: "Pictures & Reviews", description: "Take final pictures and get reviews", order: 25 },
+    ];
+
+    const todosToInsert = defaultTodos.map(todo => ({
+      ...todo,
+      projectId,
+      completed: false,
+    }));
+
+    await db.insert(projectTodos).values(todosToInsert);
   }
 }
 

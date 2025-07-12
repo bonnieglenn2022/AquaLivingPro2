@@ -16,6 +16,7 @@ import { Eye, MapPin, DollarSign, Building, Calendar, Edit3, Save, X } from "luc
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Project, Customer, InsertProject } from "@shared/schema";
+import { TodoList } from "@/components/project/TodoList";
 
 const statusColors = {
   planning: "bg-slate-100 text-slate-800",
@@ -582,6 +583,9 @@ export function ProjectsTable() {
                       </CardContent>
                     </Card>
                   )}
+
+                  {/* Project Todos */}
+                  <TodoList projectId={selectedProject.id} />
 
                   {/* View Action Buttons */}
                   <div className="flex justify-between pt-4 border-t">
