@@ -36,10 +36,7 @@ export function TodoList({ projectId }: ToDoListProps) {
 
   const updateToDoMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: Partial<ProjectTodo> }) => {
-      return await apiRequest(`/api/todos/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(updates),
-      });
+      return await apiRequest("PUT", `/api/todos/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "todos"] });
