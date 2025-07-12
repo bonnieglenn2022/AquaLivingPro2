@@ -12,10 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { Eye, MapPin, DollarSign, Building, Calendar, Edit3, Save, X } from "lucide-react";
+import { Eye, MapPin, DollarSign, Building, Calendar, Edit3, Save, X, Circle, CheckCircle, Clock } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import type { Project, Customer, InsertProject } from "@shared/schema";
+import type { Project, Customer, InsertProject, ProjectTodo } from "@shared/schema";
 import { TodoList } from "@/components/project/TodoList";
 
 const statusColors = {
@@ -28,6 +28,94 @@ const statusColors = {
   completed: "bg-garden-green/10 text-garden-green",
   on_hold: "bg-coral-red/10 text-coral-red",
 };
+
+// Hook to get next todo for a project
+function useNextTodo(projectId: number) {
+  return useQuery({
+    queryKey: ["/api/projects", projectId, "todos", "next"],
+    queryFn: async () => {
+      const response = await fetch(`/api/projects/${projectId}/todos/next`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    },
+  });
+}
+
+// Component for a single project row with todo
+function ProjectRow({ project, onProjectClick, updateTodoMutation }: { 
+  project: Project; 
+  onProjectClick: (project: Project) => void;
+  updateTodoMutation: any;
+}) {
+  const { data: nextTodo } = useNextTodo(project.id);
+
+  const handleCompleteTodo = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent project click
+    if (!nextTodo) return;
+    
+    const completedAt = new Date().toISOString();
+    updateTodoMutation.mutate({ 
+      todoId: nextTodo.id, 
+      completedAt 
+    });
+  };
+
+  const statusColor = statusColors[project.status as keyof typeof statusColors] || statusColors.planning;
+
+  return (
+    <tr 
+      className="hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-100"
+      onClick={() => onProjectClick(project)}
+    >
+      <td className="py-4">
+        <div>
+          <div className="text-sm font-medium text-slate-900 flex items-center gap-2">
+            {project.name}
+            <Eye className="h-4 w-4 text-slate-400" />
+          </div>
+          <div className="text-sm text-slate-500">
+            {project.city && project.state ? `${project.city}, ${project.state}` : 'Location TBD'}
+          </div>
+          {/* Next To Do under project name */}
+          {nextTodo && (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-4 w-4 p-0 hover:bg-blue-50"
+                onClick={handleCompleteTodo}
+                disabled={updateTodoMutation.isPending}
+              >
+                {updateTodoMutation.isPending ? (
+                  <CheckCircle className="h-3 w-3 text-green-500" />
+                ) : (
+                  <Circle className="h-3 w-3 text-blue-500 hover:text-blue-600" />
+                )}
+              </Button>
+              <span className="text-slate-600 font-medium">Next: {nextTodo.title}</span>
+            </div>
+          )}
+          {!nextTodo && (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <CheckCircle className="h-3 w-3 text-green-500" />
+              <span className="text-green-600 font-medium">All To Dos completed!</span>
+            </div>
+          )}
+        </div>
+      </td>
+      <td className="py-4">
+        <Badge className={statusColor}>
+          {project.status.replace('_', ' ')}
+        </Badge>
+      </td>
+      <td className="py-4 text-sm text-slate-900">
+        {project.budget ? `$${parseFloat(project.budget).toLocaleString()}` : 'TBD'}
+      </td>
+    </tr>
+  );
+}
 
 export function ProjectsTable() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -42,6 +130,44 @@ export function ProjectsTable() {
 
   const { data: customers = [] } = useQuery({
     queryKey: ["/api/customers"],
+  });
+
+  // Mutation to complete a todo
+  const updateTodoMutation = useMutation({
+    mutationFn: async ({ todoId, completedAt }: { todoId: number; completedAt: string }) => {
+      await apiRequest("PUT", `/api/todos/${todoId}`, {
+        completed: true,
+        completedAt,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "To Do completed",
+        description: "The To Do has been marked as completed.",
+      });
+      // Invalidate multiple caches to update all areas
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/activities"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/messages"] });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to update To Do",
+        variant: "destructive",
+      });
+    },
   });
 
   const getCustomerName = (customerId: number) => {
@@ -260,33 +386,12 @@ export function ProjectsTable() {
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {activeProjects.map((project: any) => (
-                  <tr 
-                    key={project.id} 
-                    className="hover:bg-slate-50 cursor-pointer transition-colors"
-                    onClick={() => handleProjectClick(project)}
-                  >
-                    <td className="py-4">
-                      <div>
-                        <div className="text-sm font-medium text-slate-900 flex items-center gap-2">
-                          {project.name}
-                          <Eye className="h-4 w-4 text-slate-400" />
-                        </div>
-                        <div className="text-sm text-slate-500">
-                          {project.city && project.state ? `${project.city}, ${project.state}` : 'Location TBD'}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4">
-                      <Badge 
-                        className={statusColors[project.status as keyof typeof statusColors] || statusColors.planning}
-                      >
-                        {project.status.replace('_', ' ')}
-                      </Badge>
-                    </td>
-                    <td className="py-4 text-sm text-slate-900">
-                      {project.budget ? `$${parseFloat(project.budget).toLocaleString()}` : 'TBD'}
-                    </td>
-                  </tr>
+                  <ProjectRow 
+                    key={project.id}
+                    project={project}
+                    onProjectClick={handleProjectClick}
+                    updateTodoMutation={updateTodoMutation}
+                  />
                 ))}
               </tbody>
             </table>

@@ -11,7 +11,7 @@ import { ProjectTimeline } from "@/components/dashboard/ProjectTimeline";
 import { EquipmentStatus } from "@/components/dashboard/EquipmentStatus";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentLeads } from "@/components/dashboard/RecentLeads";
-import { ProjectStatus } from "@/components/dashboard/ProjectStatus";
+
 import { useQuery } from "@tanstack/react-query";
 import type { Project } from "@shared/schema";
 
@@ -92,7 +92,6 @@ export default function Dashboard() {
               <ProjectTimeline />
             </div>
             <div className="space-y-4">
-              {activeProject && <ProjectStatus project={activeProject} />}
               <EquipmentStatus />
             </div>
           </div>
