@@ -250,6 +250,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (updates.completed && !updates.completedAt) {
         updates.completedAt = new Date();
         updates.completedBy = (req.user as any)?.claims?.sub || "system";
+      } else if (updates.completed && updates.completedAt) {
+        // Convert string to Date object if needed
+        updates.completedAt = new Date(updates.completedAt);
+        updates.completedBy = (req.user as any)?.claims?.sub || "system";
       } else if (!updates.completed) {
         updates.completedAt = null;
         updates.completedBy = null;
