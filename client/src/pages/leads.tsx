@@ -36,10 +36,7 @@ export default function Leads() {
 
   const createCustomerMutation = useMutation({
     mutationFn: async (customerData: InsertCustomer) => {
-      return await apiRequest("/api/customers", {
-        method: "POST",
-        body: JSON.stringify(customerData),
-      });
+      return await apiRequest("POST", "/api/customers", customerData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
@@ -73,10 +70,7 @@ export default function Leads() {
 
   const updateCustomerMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: Partial<InsertCustomer> }) => {
-      return await apiRequest(`/api/customers/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(updates),
-      });
+      return await apiRequest("PUT", `/api/customers/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
