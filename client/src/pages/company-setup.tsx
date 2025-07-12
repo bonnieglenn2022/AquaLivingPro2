@@ -50,10 +50,12 @@ export default function CompanySetup() {
   const [, setLocation] = useLocation();
   const { user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [mode, setMode] = useState<"choose" | "create" | "join">("choose");
   const [step, setStep] = useState(1);
   const [locations, setLocations] = useState<LocationForm[]>([]);
   const [showLocationForm, setShowLocationForm] = useState(false);
   const [companyCode, setCompanyCode] = useState("");
+  const [joinCode, setJoinCode] = useState("");
 
   const form = useForm<CompanySetupForm>({
     resolver: zodResolver(companySetupSchema),
@@ -98,6 +100,28 @@ export default function CompanySetup() {
     },
   });
 
+  const joinCompanyMutation = useMutation({
+    mutationFn: async (companyCode: string) => {
+      const response = await apiRequest("POST", "/api/companies/join", { companyCode });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/company"] });
+      toast({
+        title: "Successfully Joined Company!",
+        description: `You've joined ${data.company.name}.`,
+      });
+      setLocation("/");
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Invalid company code or invitation has expired.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const onSubmit = (data: CompanySetupForm) => {
     if (locations.length === 0) {
       toast({
@@ -112,6 +136,19 @@ export default function CompanySetup() {
       ...data,
       locations,
     });
+  };
+
+  const handleJoinCompany = () => {
+    if (!joinCode.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a company code.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    joinCompanyMutation.mutate(joinCode.trim().toUpperCase());
   };
 
   const addLocation = (locationData: LocationForm) => {
@@ -131,11 +168,7 @@ export default function CompanySetup() {
     setLocations(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Redirect if user already has a company
-  if (existingCompany && !authLoading) {
-    setLocation("/dashboard");
-    return null;
-  }
+  // Note: Company existence is now handled by App.tsx routing
 
   if (authLoading) {
     return (
@@ -156,24 +189,94 @@ export default function CompanySetup() {
           <p className="text-slate-600">Let's set up your pool construction company</p>
         </div>
 
-        {/* Progress Steps */}
-        <div className="flex items-center justify-center mb-8">
-          <div className="flex items-center space-x-4">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 1 ? 'bg-pool-blue text-white' : 'bg-slate-200 text-slate-500'}`}>
-              <Building className="w-5 h-5" />
-            </div>
-            <div className={`w-20 h-1 ${step >= 2 ? 'bg-pool-blue' : 'bg-slate-200'}`}></div>
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 2 ? 'bg-pool-blue text-white' : 'bg-slate-200 text-slate-500'}`}>
-              <MapPin className="w-5 h-5" />
-            </div>
-            <div className={`w-20 h-1 ${step >= 3 ? 'bg-pool-blue' : 'bg-slate-200'}`}></div>
-            <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 3 ? 'bg-pool-blue text-white' : 'bg-slate-200 text-slate-500'}`}>
-              <Users className="w-5 h-5" />
-            </div>
-          </div>
-        </div>
+        {mode === "choose" && (
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle className="text-center">Get Started</CardTitle>
+              <p className="text-center text-slate-600">Choose how you'd like to proceed</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                onClick={() => setMode("create")}
+                className="w-full bg-pool-blue hover:bg-pool-blue/90 h-20 text-lg"
+              >
+                <Building className="w-6 h-6 mr-3" />
+                Create New Company
+              </Button>
+              
+              <div className="text-center text-slate-500 text-sm">or</div>
+              
+              <Button
+                onClick={() => setMode("join")}
+                variant="outline"
+                className="w-full h-20 text-lg border-2"
+              >
+                <Users className="w-6 h-6 mr-3" />
+                Join Existing Company
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
-        {step === 1 && (
+        {mode === "join" && (
+          <Card className="max-w-md mx-auto">
+            <CardHeader>
+              <CardTitle className="text-center">Join Company</CardTitle>
+              <p className="text-center text-slate-600">Enter your company code to join</p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label htmlFor="joinCode">Company Code</Label>
+                <Input
+                  id="joinCode"
+                  placeholder="Enter 6-character code (e.g., ABC123)"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  maxLength={6}
+                  className="text-center text-lg font-mono tracking-wider"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setMode("choose")}
+                  className="flex-1"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleJoinCompany}
+                  disabled={joinCompanyMutation.isPending || joinCode.length !== 6}
+                  className="flex-1 bg-pool-blue hover:bg-pool-blue/90"
+                >
+                  {joinCompanyMutation.isPending ? "Joining..." : "Join Company"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {mode === "create" && (
+          <>
+            {/* Progress Steps */}
+            <div className="flex items-center justify-center mb-8">
+              <div className="flex items-center space-x-4">
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 1 ? 'bg-pool-blue text-white' : 'bg-slate-200 text-slate-500'}`}>
+                  <Building className="w-5 h-5" />
+                </div>
+                <div className={`w-20 h-1 ${step >= 2 ? 'bg-pool-blue' : 'bg-slate-200'}`}></div>
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 2 ? 'bg-pool-blue text-white' : 'bg-slate-200 text-slate-500'}`}>
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div className={`w-20 h-1 ${step >= 3 ? 'bg-pool-blue' : 'bg-slate-200'}`}></div>
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 3 ? 'bg-pool-blue text-white' : 'bg-slate-200 text-slate-500'}`}>
+                  <Users className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+
+            {step === 1 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -333,7 +436,10 @@ export default function CompanySetup() {
                     )}
                   />
 
-                  <div className="flex justify-end">
+                  <div className="flex justify-between">
+                    <Button variant="outline" onClick={() => setMode("choose")}>
+                      Back
+                    </Button>
                     <Button type="submit" className="bg-pool-blue hover:bg-pool-blue/90">
                       Continue to Office Locations
                     </Button>
@@ -342,7 +448,7 @@ export default function CompanySetup() {
               </Form>
             </CardContent>
           </Card>
-        )}
+            )}
 
         {step === 2 && (
           <Card>
@@ -549,7 +655,7 @@ export default function CompanySetup() {
               </div>
             </CardContent>
           </Card>
-        )}
+            )}
 
         {step === 3 && (
           <Card>
@@ -580,7 +686,7 @@ export default function CompanySetup() {
 
               <div className="text-center">
                 <Button 
-                  onClick={() => setLocation("/dashboard")}
+                  onClick={() => setLocation("/")}
                   className="bg-pool-blue hover:bg-pool-blue/90"
                 >
                   Continue to Dashboard
@@ -588,6 +694,8 @@ export default function CompanySetup() {
               </div>
             </CardContent>
           </Card>
+            )}
+          </>
         )}
       </div>
     </div>

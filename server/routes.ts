@@ -61,7 +61,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/user/company', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const company = await storage.getCompanyByOwnerId(userId);
+      const user = await storage.getUser(userId);
+      
+      if (!user || !user.companyId) {
+        return res.json(null);
+      }
+      
+      const company = await storage.getCompany(user.companyId);
       res.json(company);
     } catch (error) {
       console.error("Error fetching company:", error);
@@ -141,6 +147,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching dashboard metrics:", error);
       res.status(500).json({ message: "Failed to fetch dashboard metrics" });
+    }
+  });
+
+  app.post('/api/companies/join', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { companyCode } = req.body;
+      
+      if (!companyCode) {
+        return res.status(400).json({ message: "Company code is required" });
+      }
+      
+      // Find company by code
+      const company = await storage.getCompanyByCode(companyCode.toUpperCase());
+      if (!company) {
+        return res.status(404).json({ message: "Company not found" });
+      }
+      
+      // Update user's companyId
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Update user to join the company
+      await storage.upsertUser({
+        ...user,
+        companyId: company.id,
+      });
+      
+      res.json({ 
+        message: "Successfully joined company",
+        company 
+      });
+    } catch (error) {
+      console.error("Error joining company:", error);
+      res.status(500).json({ message: "Failed to join company" });
     }
   });
 

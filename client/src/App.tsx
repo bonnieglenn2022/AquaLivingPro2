@@ -24,6 +24,8 @@ function Router() {
   const { data: userCompany, isLoading: companyLoading } = useQuery({
     queryKey: ["/api/user/company"],
     enabled: isAuthenticated && !!user,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
 
   // Show loading state
@@ -42,7 +44,10 @@ function Router() {
     <Switch>
       {!isAuthenticated ? (
         <Route path="/" component={Landing} />
-      ) : userCompany ? (
+      ) : !userCompany ? (
+        // User needs to set up company
+        <Route path="*" component={CompanySetup} />
+      ) : (
         // User has a company - show normal app
         <>
           <Route path="/" component={Dashboard} />
@@ -54,9 +59,6 @@ function Router() {
           <Route path="/vendors" component={Vendors} />
           <Route path="/reports" component={Reports} />
         </>
-      ) : (
-        // User needs to set up company
-        <Route path="*" component={CompanySetup} />
       )}
       <Route component={NotFound} />
     </Switch>
