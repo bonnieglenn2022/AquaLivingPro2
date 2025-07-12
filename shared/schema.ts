@@ -37,7 +37,7 @@ export const customers = pgTable("customers", {
   state: text("state"),
   zipCode: text("zip_code"),
   leadSource: text("lead_source"), // website, referral, marketing, etc.
-  status: text("status").notNull().default("lead"), // lead, customer, inactive
+  status: text("status").notNull().default("new_lead"), // new_lead, design, design_meeting, redesign, bid, budget_meeting, rebid, sign_contract, sold, on_hold, waiting_on_financing, lost_lead, bad_lead
   priority: text("priority").default("warm"), // hot, warm, cold
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),

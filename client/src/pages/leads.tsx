@@ -134,8 +134,10 @@ export default function Leads() {
   // Group customers by status for metrics
   const metrics = {
     total: customers.length,
-    leads: customers.filter((c: Customer) => c.status === "lead").length,
-    customers: customers.filter((c: Customer) => c.status === "customer").length,
+    newLeads: customers.filter((c: Customer) => c.status === "new_lead").length,
+    inDesign: customers.filter((c: Customer) => ["design", "design_meeting", "redesign"].includes(c.status)).length,
+    bidding: customers.filter((c: Customer) => ["bid", "budget_meeting", "rebid"].includes(c.status)).length,
+    sold: customers.filter((c: Customer) => c.status === "sold").length,
     hot: customers.filter((c: Customer) => c.priority === "hot").length,
     warm: customers.filter((c: Customer) => c.priority === "warm").length,
     cold: customers.filter((c: Customer) => c.priority === "cold").length,
@@ -143,10 +145,39 @@ export default function Leads() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "lead": return "bg-amber-100 text-amber-800";
-      case "customer": return "bg-emerald-100 text-emerald-800";
-      case "inactive": return "bg-slate-100 text-slate-800";
+      case "new_lead": return "bg-blue-100 text-blue-800";
+      case "design": 
+      case "design_meeting": 
+      case "redesign": return "bg-purple-100 text-purple-800";
+      case "bid": 
+      case "budget_meeting": 
+      case "rebid": return "bg-orange-100 text-orange-800";
+      case "sign_contract": return "bg-green-100 text-green-800";
+      case "sold": return "bg-emerald-100 text-emerald-800";
+      case "on_hold": return "bg-yellow-100 text-yellow-800";
+      case "waiting_on_financing": return "bg-cyan-100 text-cyan-800";
+      case "lost_lead": 
+      case "bad_lead": return "bg-red-100 text-red-800";
       default: return "bg-slate-100 text-slate-800";
+    }
+  };
+
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case "new_lead": return "New Lead";
+      case "design": return "Design";
+      case "design_meeting": return "Design Meeting";
+      case "redesign": return "ReDesign";
+      case "bid": return "Bid";
+      case "budget_meeting": return "Budget Meeting";
+      case "rebid": return "Rebid";
+      case "sign_contract": return "Sign Contract";
+      case "sold": return "Sold";
+      case "on_hold": return "On Hold";
+      case "waiting_on_financing": return "Waiting on Financing";
+      case "lost_lead": return "Lost Lead";
+      case "bad_lead": return "Bad Lead";
+      default: return status;
     }
   };
 
@@ -173,7 +204,7 @@ export default function Leads() {
       state: form.get("state") as string || null,
       zipCode: form.get("zipCode") as string || null,
       leadSource: formData.leadSource || null,
-      status: "lead", // Always set as lead for new entries
+      status: "new_lead", // Always set as new_lead for new entries
       priority: formData.priority || "warm",
       notes: form.get("notes") as string || null,
     };
@@ -222,10 +253,10 @@ export default function Leads() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-600 text-sm">Active Leads</p>
-                    <p className="text-2xl font-bold text-amber-600">{metrics.leads}</p>
+                    <p className="text-slate-600 text-sm">New Leads</p>
+                    <p className="text-2xl font-bold text-blue-600">{metrics.newLeads}</p>
                   </div>
-                  <TrendingUp className="h-8 w-8 text-amber-500" />
+                  <TrendingUp className="h-8 w-8 text-blue-500" />
                 </div>
               </CardContent>
             </Card>
@@ -234,10 +265,10 @@ export default function Leads() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-600 text-sm">Customers</p>
-                    <p className="text-2xl font-bold text-emerald-600">{metrics.customers}</p>
+                    <p className="text-slate-600 text-sm">In Design</p>
+                    <p className="text-2xl font-bold text-purple-600">{metrics.inDesign}</p>
                   </div>
-                  <User className="h-8 w-8 text-emerald-500" />
+                  <User className="h-8 w-8 text-purple-500" />
                 </div>
               </CardContent>
             </Card>
@@ -270,10 +301,22 @@ export default function Leads() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-600 text-sm">Cold Leads</p>
-                    <p className="text-2xl font-bold text-blue-600">{metrics.cold}</p>
+                    <p className="text-slate-600 text-sm">Bidding</p>
+                    <p className="text-2xl font-bold text-orange-600">{metrics.bidding}</p>
                   </div>
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-bold">C</div>
+                  <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">B</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-600 text-sm">Sold</p>
+                    <p className="text-2xl font-bold text-emerald-600">{metrics.sold}</p>
+                  </div>
+                  <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">S</div>
                 </div>
               </CardContent>
             </Card>
@@ -392,14 +435,24 @@ export default function Leads() {
               <div className="flex gap-2 items-center">
                 <Filter className="h-4 w-4 text-slate-500" />
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="lead">Leads</SelectItem>
-                    <SelectItem value="customer">Customers</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="new_lead">New Lead</SelectItem>
+                    <SelectItem value="design">Design</SelectItem>
+                    <SelectItem value="design_meeting">Design Meeting</SelectItem>
+                    <SelectItem value="redesign">ReDesign</SelectItem>
+                    <SelectItem value="bid">Bid</SelectItem>
+                    <SelectItem value="budget_meeting">Budget Meeting</SelectItem>
+                    <SelectItem value="rebid">Rebid</SelectItem>
+                    <SelectItem value="sign_contract">Sign Contract</SelectItem>
+                    <SelectItem value="sold">Sold</SelectItem>
+                    <SelectItem value="on_hold">On Hold</SelectItem>
+                    <SelectItem value="waiting_on_financing">Waiting on Financing</SelectItem>
+                    <SelectItem value="lost_lead">Lost Lead</SelectItem>
+                    <SelectItem value="bad_lead">Bad Lead</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -451,7 +504,7 @@ export default function Leads() {
                                   {customer.firstName} {customer.lastName}
                                 </h3>
                                 <Badge className={getStatusColor(customer.status)}>
-                                  {customer.status}
+                                  {getStatusDisplayName(customer.status)}
                                 </Badge>
                                 <Badge className={getPriorityColor(customer.priority || "warm")}>
                                   {customer.priority}
@@ -498,13 +551,23 @@ export default function Leads() {
                             onValueChange={(value) => handleStatusChange(customer.id, value)}
                             disabled={updateCustomerMutation.isPending}
                           >
-                            <SelectTrigger className="w-32">
+                            <SelectTrigger className="w-40">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="lead">Lead</SelectItem>
-                              <SelectItem value="customer">Customer</SelectItem>
-                              <SelectItem value="inactive">Inactive</SelectItem>
+                              <SelectItem value="new_lead">New Lead</SelectItem>
+                              <SelectItem value="design">Design</SelectItem>
+                              <SelectItem value="design_meeting">Design Meeting</SelectItem>
+                              <SelectItem value="redesign">ReDesign</SelectItem>
+                              <SelectItem value="bid">Bid</SelectItem>
+                              <SelectItem value="budget_meeting">Budget Meeting</SelectItem>
+                              <SelectItem value="rebid">Rebid</SelectItem>
+                              <SelectItem value="sign_contract">Sign Contract</SelectItem>
+                              <SelectItem value="sold">Sold</SelectItem>
+                              <SelectItem value="on_hold">On Hold</SelectItem>
+                              <SelectItem value="waiting_on_financing">Waiting on Financing</SelectItem>
+                              <SelectItem value="lost_lead">Lost Lead</SelectItem>
+                              <SelectItem value="bad_lead">Bad Lead</SelectItem>
                             </SelectContent>
                           </Select>
 
