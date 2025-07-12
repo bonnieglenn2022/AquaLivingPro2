@@ -22,6 +22,8 @@ export default function Leads() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [formData, setFormData] = useState({
@@ -242,6 +244,11 @@ export default function Leads() {
       id: customerId,
       updates: { salesperson: newSalesperson },
     });
+  };
+
+  const handleViewDetails = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsDetailsDialogOpen(true);
   };
 
   return (
@@ -465,6 +472,128 @@ export default function Leads() {
                 </DialogContent>
               </Dialog>
 
+              {/* Lead Details Dialog */}
+              <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>
+                      Lead Details - {selectedCustomer?.firstName} {selectedCustomer?.lastName}
+                    </DialogTitle>
+                  </DialogHeader>
+                  
+                  {selectedCustomer && (
+                    <div className="space-y-6">
+                      {/* Contact Information */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Contact Information</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-slate-500" />
+                              <span className="font-medium">Name:</span>
+                              <span>{selectedCustomer.firstName} {selectedCustomer.lastName}</span>
+                            </div>
+                            {selectedCustomer.email && (
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4 text-slate-500" />
+                                <span className="font-medium">Email:</span>
+                                <span>{selectedCustomer.email}</span>
+                              </div>
+                            )}
+                            {selectedCustomer.phone && (
+                              <div className="flex items-center gap-2">
+                                <Phone className="h-4 w-4 text-slate-500" />
+                                <span className="font-medium">Phone:</span>
+                                <span>{selectedCustomer.phone}</span>
+                              </div>
+                            )}
+                            {(selectedCustomer.address || selectedCustomer.city || selectedCustomer.state) && (
+                              <div className="flex items-start gap-2">
+                                <MapPin className="h-4 w-4 text-slate-500 mt-1" />
+                                <div>
+                                  <span className="font-medium">Address:</span>
+                                  <div className="text-slate-600">
+                                    {selectedCustomer.address && <div>{selectedCustomer.address}</div>}
+                                    {(selectedCustomer.city || selectedCustomer.state) && (
+                                      <div>
+                                        {selectedCustomer.city}{selectedCustomer.city && selectedCustomer.state && ", "}{selectedCustomer.state} {selectedCustomer.zipCode}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Lead Status</CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Current Status:</span>
+                              <Badge className={getStatusColor(selectedCustomer.status)}>
+                                {getStatusDisplayName(selectedCustomer.status)}
+                              </Badge>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Priority:</span>
+                              <Badge className={getPriorityColor(selectedCustomer.priority || "warm")}>
+                                {selectedCustomer.priority}
+                              </Badge>
+                            </div>
+                            {selectedCustomer.leadSource && (
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-slate-500" />
+                                <span className="font-medium">Lead Source:</span>
+                                <span>{selectedCustomer.leadSource}</span>
+                              </div>
+                            )}
+                            {selectedCustomer.salesperson && (
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-slate-500" />
+                                <span className="font-medium">Assigned To:</span>
+                                <span>{getSalespersonDisplayName(selectedCustomer.salesperson)}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-slate-500" />
+                              <span className="font-medium">Created:</span>
+                              <span>{new Date(selectedCustomer.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      {/* Notes Section */}
+                      {selectedCustomer.notes && (
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">Notes</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <p className="text-slate-600 whitespace-pre-wrap">{selectedCustomer.notes}</p>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="flex justify-end gap-2 pt-4 border-t">
+                        <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
+                          Close
+                        </Button>
+                        <Button className="bg-pool-blue hover:bg-pool-blue/90">
+                          Edit Lead
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </DialogContent>
+              </Dialog>
+
               <div className="flex gap-2 items-center">
                 <Filter className="h-4 w-4 text-slate-500" />
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -639,7 +768,11 @@ export default function Leads() {
                             </SelectContent>
                           </Select>
 
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewDetails(customer)}
+                          >
                             View Details
                           </Button>
                         </div>
