@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Phone, Mail, MapPin, Calendar, User, TrendingUp, Filter } from "lucide-react";
+import { Plus, Phone, Mail, MapPin, Calendar, User, TrendingUp, Filter, Upload, FileText, Image } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Customer, InsertCustomer } from "@shared/schema";
@@ -23,10 +23,16 @@ export default function Leads() {
   const { isAuthenticated, isLoading } = useAuth();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [formData, setFormData] = useState({
+    leadSource: "",
+    priority: "warm",
+    salesperson: ""
+  });
+  const [editFormData, setEditFormData] = useState({
     leadSource: "",
     priority: "warm",
     salesperson: ""
@@ -77,6 +83,8 @@ export default function Leads() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      setIsEditDialogOpen(false);
+      setSelectedCustomer(null);
       toast({
         title: "Success",
         description: "Lead updated successfully",
@@ -249,6 +257,44 @@ export default function Leads() {
   const handleViewDetails = (customer: Customer) => {
     setSelectedCustomer(customer);
     setIsDetailsDialogOpen(true);
+  };
+
+  const handleEditLead = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setEditFormData({
+      leadSource: customer.leadSource || "",
+      priority: customer.priority || "warm",
+      salesperson: customer.salesperson || ""
+    });
+    setIsEditDialogOpen(true);
+    setIsDetailsDialogOpen(false);
+  };
+
+  const handleUpdateLead = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedCustomer) return;
+    
+    const form = new FormData(e.currentTarget);
+    
+    const updates: Partial<InsertCustomer> = {
+      firstName: form.get("firstName") as string,
+      lastName: form.get("lastName") as string,
+      email: form.get("email") as string || null,
+      phone: form.get("phone") as string || null,
+      address: form.get("address") as string || null,
+      city: form.get("city") as string || null,
+      state: form.get("state") as string || null,
+      zipCode: form.get("zipCode") as string || null,
+      leadSource: editFormData.leadSource || null,
+      priority: editFormData.priority || "warm",
+      salesperson: editFormData.salesperson || null,
+      notes: form.get("notes") as string || null,
+    };
+
+    updateCustomerMutation.mutate({
+      id: selectedCustomer.id,
+      updates
+    });
   };
 
   return (
@@ -580,17 +626,236 @@ export default function Leads() {
                         </Card>
                       )}
 
+                      {/* Documents Section */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <FileText className="h-5 w-5" />
+                            Documents & Photos
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          {/* File Upload Area */}
+                          <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
+                            <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+                            <p className="text-slate-600 mb-2">Upload photos, PDFs, or other documents</p>
+                            <Input 
+                              type="file" 
+                              multiple 
+                              accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx" 
+                              className="hidden" 
+                              id={`file-upload-${selectedCustomer.id}`}
+                              onChange={(e) => {
+                                // Handle file upload here
+                                const files = e.target.files;
+                                if (files) {
+                                  toast({
+                                    title: "Files Selected",
+                                    description: `${files.length} file(s) ready to upload`,
+                                  });
+                                }
+                              }}
+                            />
+                            <Label 
+                              htmlFor={`file-upload-${selectedCustomer.id}`} 
+                              className="cursor-pointer"
+                            >
+                              <Button variant="outline" type="button" className="mt-2">
+                                <Upload className="h-4 w-4 mr-2" />
+                                Choose Files
+                              </Button>
+                            </Label>
+                            <p className="text-xs text-slate-500 mt-2">
+                              Supports: PDF, JPG, PNG, GIF, DOC, DOCX
+                            </p>
+                          </div>
+
+                          {/* Existing Documents List */}
+                          <div className="space-y-2">
+                            <h4 className="font-medium text-sm text-slate-700">Uploaded Documents</h4>
+                            {/* Placeholder for existing documents */}
+                            <div className="text-slate-500 text-sm italic">
+                              No documents uploaded yet
+                            </div>
+                            {/* Future: Map through actual documents from database */}
+                          </div>
+                        </CardContent>
+                      </Card>
+
                       {/* Action Buttons */}
                       <div className="flex justify-end gap-2 pt-4 border-t">
                         <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
                           Close
                         </Button>
-                        <Button className="bg-pool-blue hover:bg-pool-blue/90">
+                        <Button 
+                          className="bg-pool-blue hover:bg-pool-blue/90"
+                          onClick={() => handleEditLead(selectedCustomer)}
+                        >
                           Edit Lead
                         </Button>
                       </div>
                     </div>
                   )}
+                </DialogContent>
+              </Dialog>
+
+              {/* Edit Lead Dialog */}
+              <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Edit Lead - {selectedCustomer?.firstName} {selectedCustomer?.lastName}</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleUpdateLead} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-firstName">First Name *</Label>
+                        <Input 
+                          id="edit-firstName" 
+                          name="firstName" 
+                          defaultValue={selectedCustomer?.firstName}
+                          required 
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-lastName">Last Name *</Label>
+                        <Input 
+                          id="edit-lastName" 
+                          name="lastName" 
+                          defaultValue={selectedCustomer?.lastName}
+                          required 
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-email">Email</Label>
+                        <Input 
+                          id="edit-email" 
+                          name="email" 
+                          type="email" 
+                          defaultValue={selectedCustomer?.email || ""}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-phone">Phone</Label>
+                        <Input 
+                          id="edit-phone" 
+                          name="phone" 
+                          type="tel" 
+                          defaultValue={selectedCustomer?.phone || ""}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-leadSource">Lead Source</Label>
+                        <Select 
+                          value={editFormData.leadSource} 
+                          onValueChange={(value) => setEditFormData(prev => ({ ...prev, leadSource: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select source" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="website">Website</SelectItem>
+                            <SelectItem value="referral">Referral</SelectItem>
+                            <SelectItem value="social_media">Social Media</SelectItem>
+                            <SelectItem value="home_show">Home Show</SelectItem>
+                            <SelectItem value="advertisement">Advertisement</SelectItem>
+                            <SelectItem value="cold_call">Cold Call</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-priority">Priority</Label>
+                        <Select 
+                          value={editFormData.priority} 
+                          onValueChange={(value) => setEditFormData(prev => ({ ...prev, priority: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="hot">Hot</SelectItem>
+                            <SelectItem value="warm">Warm</SelectItem>
+                            <SelectItem value="cold">Cold</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="edit-city">City</Label>
+                        <Input 
+                          id="edit-city" 
+                          name="city" 
+                          defaultValue={selectedCustomer?.city || ""}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-state">State</Label>
+                        <Input 
+                          id="edit-state" 
+                          name="state" 
+                          defaultValue={selectedCustomer?.state || ""}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-zipCode">Zip Code</Label>
+                        <Input 
+                          id="edit-zipCode" 
+                          name="zipCode" 
+                          defaultValue={selectedCustomer?.zipCode || ""}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-address">Address</Label>
+                      <Input 
+                        id="edit-address" 
+                        name="address" 
+                        defaultValue={selectedCustomer?.address || ""}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-salesperson">Assigned Salesperson</Label>
+                      <Select 
+                        value={editFormData.salesperson} 
+                        onValueChange={(value) => setEditFormData(prev => ({ ...prev, salesperson: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select salesperson" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="tracy_glenn">Tracy Glenn</SelectItem>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-notes">Notes</Label>
+                      <Textarea 
+                        id="edit-notes" 
+                        name="notes" 
+                        placeholder="Notes about the lead..." 
+                        defaultValue={selectedCustomer?.notes || ""}
+                        rows={4}
+                      />
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <Button type="button" variant="outline" onClick={() => {
+                        setIsEditDialogOpen(false);
+                        setEditFormData({ leadSource: "", priority: "warm", salesperson: "" });
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={updateCustomerMutation.isPending}>
+                        {updateCustomerMutation.isPending ? "Updating..." : "Update Lead"}
+                      </Button>
+                    </div>
+                  </form>
                 </DialogContent>
               </Dialog>
 
