@@ -105,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const projectData = {
             name: `${customer.firstName} ${customer.lastName} Pool Project`,
             customerId: customer.id,
-            type: "pool" as const,
+            types: ["pool_spa"] as ("pool_spa" | "pool_only" | "decking" | "patio_cover" | "pergola" | "outdoor_kitchen" | "driveway")[],
             status: "planning" as const,
             address: customer.address || "",
             city: customer.city || "",

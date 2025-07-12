@@ -50,7 +50,7 @@ export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   customerId: integer("customer_id").references(() => customers.id),
-  type: text("type").notNull(), // pool, spa, deck, outdoor_kitchen, landscaping, renovation
+  types: text("types").array().notNull().default(["pool_spa"]), // pool_spa, pool_only, decking, patio_cover, pergola, outdoor_kitchen, driveway
   status: text("status").notNull().default("planning"), // planning, excavation, plumbing, electrical, gunite, finishing, completed, on_hold
   budget: decimal("budget", { precision: 10, scale: 2 }),
   actualCost: decimal("actual_cost", { precision: 10, scale: 2 }).default("0"),
@@ -306,6 +306,8 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  types: z.array(z.enum(["pool_spa", "pool_only", "decking", "patio_cover", "pergola", "outdoor_kitchen", "driveway"])).min(1, "At least one project type is required"),
 });
 
 export const insertEstimateSchema = createInsertSchema(estimates).omit({

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -39,6 +40,7 @@ export default function Projects() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(["pool_spa"]);
 
   const { data: projects = [], isLoading: projectsLoading } = useQuery({
     queryKey: ["/api/projects"],
@@ -144,14 +146,19 @@ export default function Projects() {
 
   const getProjectTypeDisplayName = (type: string) => {
     switch (type) {
-      case "pool": return "Pool";
-      case "spa": return "Spa";
-      case "deck": return "Deck";
+      case "pool_spa": return "Pool & Spa";
+      case "pool_only": return "Pool Only";
+      case "decking": return "Decking";
+      case "patio_cover": return "Patio Cover";
+      case "pergola": return "Pergola";
       case "outdoor_kitchen": return "Outdoor Kitchen";
-      case "landscaping": return "Landscaping";
-      case "renovation": return "Renovation";
+      case "driveway": return "Driveway";
       default: return type;
     }
+  };
+
+  const getProjectTypesDisplay = (types: string[]) => {
+    return types.map(type => getProjectTypeDisplayName(type)).join(", ");
   };
 
   const getProjectProgress = (status: string) => {
@@ -192,7 +199,7 @@ export default function Projects() {
     const projectData: InsertProject = {
       name: form.get("name") as string,
       customerId: parseInt(form.get("customerId") as string),
-      type: form.get("type") as string,
+      types: selectedTypes,
       status: "planning",
       budget: form.get("budget") as string || null,
       address: form.get("address") as string || null,
@@ -203,6 +210,14 @@ export default function Projects() {
     };
 
     createProjectMutation.mutate(projectData);
+  };
+
+  const handleProjectTypeChange = (type: string, checked: boolean) => {
+    if (checked) {
+      setSelectedTypes(prev => [...prev, type]);
+    } else {
+      setSelectedTypes(prev => prev.filter(t => t !== type));
+    }
   };
 
   const filteredProjects = projects.filter((project: Project) => {
@@ -288,20 +303,29 @@ export default function Projects() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="type">Project Type *</Label>
-                    <Select name="type" required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pool">Pool</SelectItem>
-                        <SelectItem value="spa">Spa</SelectItem>
-                        <SelectItem value="deck">Deck</SelectItem>
-                        <SelectItem value="outdoor_kitchen">Outdoor Kitchen</SelectItem>
-                        <SelectItem value="landscaping">Landscaping</SelectItem>
-                        <SelectItem value="renovation">Renovation</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label>Project Types * (select all that apply)</Label>
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      {[
+                        { value: "pool_spa", label: "Pool & Spa" },
+                        { value: "pool_only", label: "Pool Only" },
+                        { value: "decking", label: "Decking" },
+                        { value: "patio_cover", label: "Patio Cover" },
+                        { value: "pergola", label: "Pergola" },
+                        { value: "outdoor_kitchen", label: "Outdoor Kitchen" },
+                        { value: "driveway", label: "Driveway" },
+                      ].map((type) => (
+                        <div key={type.value} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`create-type-${type.value}`}
+                            checked={selectedTypes.includes(type.value)}
+                            onCheckedChange={(checked) => handleProjectTypeChange(type.value, checked as boolean)}
+                          />
+                          <Label htmlFor={`create-type-${type.value}`} className="text-sm font-normal">
+                            {type.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="budget">Budget</Label>
@@ -399,7 +423,7 @@ export default function Projects() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Waves className="h-4 w-4 text-pool-blue" />
-                        <span className="text-sm font-medium">{getProjectTypeDisplayName(project.type)}</span>
+                        <span className="text-sm font-medium">{getProjectTypesDisplay(project.types || ["pool_spa"])}</span>
                       </div>
                       <span className="text-sm text-slate-600">{getProjectProgress(project.status)}%</span>
                     </div>
@@ -485,8 +509,8 @@ export default function Projects() {
                           <span>{getCustomerName(selectedProject.customerId)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="font-medium">Type:</span>
-                          <span>{getProjectTypeDisplayName(selectedProject.type)}</span>
+                          <span className="font-medium">Types:</span>
+                          <span>{getProjectTypesDisplay(selectedProject.types || ["pool_spa"])}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="font-medium">Status:</span>

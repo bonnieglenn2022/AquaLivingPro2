@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { Eye, MapPin, DollarSign, Building, Calendar, Edit3, Save, X } from "lucide-react";
@@ -77,14 +78,19 @@ export function ProjectsTable() {
 
   const getProjectTypeDisplayName = (type: string) => {
     switch (type) {
-      case "pool": return "Pool";
-      case "spa": return "Spa";
-      case "deck": return "Deck";
+      case "pool_spa": return "Pool & Spa";
+      case "pool_only": return "Pool Only";
+      case "decking": return "Decking";
+      case "patio_cover": return "Patio Cover";
+      case "pergola": return "Pergola";
       case "outdoor_kitchen": return "Outdoor Kitchen";
-      case "landscaping": return "Landscaping";
-      case "renovation": return "Renovation";
+      case "driveway": return "Driveway";
       default: return type;
     }
+  };
+
+  const getProjectTypesDisplay = (types: string[]) => {
+    return types.map(type => getProjectTypeDisplayName(type)).join(", ");
   };
 
   const updateProjectMutation = useMutation({
@@ -124,7 +130,7 @@ export function ProjectsTable() {
     setSelectedProject(project);
     setEditForm({
       name: project.name,
-      type: project.type,
+      types: project.types || ["pool_spa"],
       status: project.status,
       budget: project.budget,
       address: project.address,
@@ -148,7 +154,7 @@ export function ProjectsTable() {
     if (selectedProject) {
       setEditForm({
         name: selectedProject.name,
-        type: selectedProject.type,
+        types: selectedProject.types || ["pool_spa"],
         status: selectedProject.status,
         budget: selectedProject.budget,
         address: selectedProject.address,
@@ -173,6 +179,15 @@ export function ProjectsTable() {
 
   const handleFormChange = (field: string, value: any) => {
     setEditForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleProjectTypeChange = (type: string, checked: boolean) => {
+    const currentTypes = editForm.types || [];
+    if (checked) {
+      setEditForm(prev => ({ ...prev, types: [...currentTypes, type] }));
+    } else {
+      setEditForm(prev => ({ ...prev, types: currentTypes.filter(t => t !== type) }));
+    }
   };
 
   if (isLoading) {
@@ -313,23 +328,29 @@ export function ProjectsTable() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="edit-type">Project Type</Label>
-                          <Select
-                            value={editForm.type || ""}
-                            onValueChange={(value) => handleFormChange("type", value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pool">Pool</SelectItem>
-                              <SelectItem value="spa">Spa</SelectItem>
-                              <SelectItem value="deck">Deck</SelectItem>
-                              <SelectItem value="outdoor_kitchen">Outdoor Kitchen</SelectItem>
-                              <SelectItem value="landscaping">Landscaping</SelectItem>
-                              <SelectItem value="renovation">Renovation</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Label>Project Types (select all that apply)</Label>
+                          <div className="grid grid-cols-2 gap-3 mt-2">
+                            {[
+                              { value: "pool_spa", label: "Pool & Spa" },
+                              { value: "pool_only", label: "Pool Only" },
+                              { value: "decking", label: "Decking" },
+                              { value: "patio_cover", label: "Patio Cover" },
+                              { value: "pergola", label: "Pergola" },
+                              { value: "outdoor_kitchen", label: "Outdoor Kitchen" },
+                              { value: "driveway", label: "Driveway" },
+                            ].map((type) => (
+                              <div key={type.value} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`type-${type.value}`}
+                                  checked={editForm.types?.includes(type.value) || false}
+                                  onCheckedChange={(checked) => handleProjectTypeChange(type.value, checked as boolean)}
+                                />
+                                <Label htmlFor={`type-${type.value}`} className="text-sm font-normal">
+                                  {type.label}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                         <div>
                           <Label htmlFor="edit-status">Status</Label>
@@ -470,8 +491,8 @@ export function ProjectsTable() {
                           <span>{getCustomerName(selectedProject.customerId)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="font-medium">Type:</span>
-                          <span>{getProjectTypeDisplayName(selectedProject.type)}</span>
+                          <span className="font-medium">Types:</span>
+                          <span>{getProjectTypesDisplay(selectedProject.types || ["pool_spa"])}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="font-medium">Status:</span>
