@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(204, 94%, 35%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+
+  /* Pool & Outdoor Living Theme Colors */
+  --pool-blue: hsl(192, 95%, 35%);
+  --ocean-teal: hsl(172, 77%, 46%);
+  --sunset-orange: hsl(24, 95%, 53%);
+  --garden-green: hsl(158, 91%, 39%);
+  --sand-yellow: hsl(39, 85%, 49%);
+  --coral-red: hsl(0, 73%, 50%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(204, 94%, 35%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+
+  /* Pool & Outdoor Living Theme Colors - Dark */
+  --pool-blue: hsl(192, 95%, 45%);
+  --ocean-teal: hsl(172, 77%, 56%);
+  --sunset-orange: hsl(24, 95%, 63%);
+  --garden-green: hsl(158, 91%, 49%);
+  --sand-yellow: hsl(39, 85%, 59%);
+  --coral-red: hsl(0, 73%, 60%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .pool-blue {
+    color: var(--pool-blue);
+  }
+  .ocean-teal {
+    color: var(--ocean-teal);
+  }
+  .sunset-orange {
+    color: var(--sunset-orange);
+  }
+  .garden-green {
+    color: var(--garden-green);
+  }
+  .sand-yellow {
+    color: var(--sand-yellow);
+  }
+  .coral-red {
+    color: var(--coral-red);
+  }
+
+  .bg-pool-blue {
+    background-color: var(--pool-blue);
+  }
+  .bg-ocean-teal {
+    background-color: var(--ocean-teal);
+  }
+  .bg-sunset-orange {
+    background-color: var(--sunset-orange);
+  }
+  .bg-garden-green {
+    background-color: var(--garden-green);
+  }
+  .bg-sand-yellow {
+    background-color: var(--sand-yellow);
+  }
+  .bg-coral-red {
+    background-color: var(--coral-red);
+  }
+}
