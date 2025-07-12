@@ -927,14 +927,17 @@ export default function Leads() {
             ) : (
               <div className="grid gap-4">
                 {filteredCustomers.map((customer: Customer) => (
-                  <Card key={customer.id} className="hover:shadow-md transition-shadow">
+                  <Card key={customer.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleViewDetails(customer)}>
                     <CardContent className="p-6">
                       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-start gap-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
-                                <h3 className="text-lg font-semibold text-slate-900">
+                                <h3 className="text-lg font-semibold text-slate-900 hover:text-pool-blue cursor-pointer" onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewDetails(customer);
+                                }}>
                                   {customer.firstName} {customer.lastName}
                                 </h3>
                                 <Badge className={getStatusColor(customer.status)}>
@@ -985,7 +988,7 @@ export default function Leads() {
                           </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2" onClick={(e) => e.stopPropagation()}>
                           <Select
                             value={customer.status}
                             onValueChange={(value) => handleStatusChange(customer.id, value)}
