@@ -263,6 +263,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/projects/:id/default-todos', isAuthenticated, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      await storage.createDefaultTodos(projectId);
+      res.status(201).json({ message: "Default todos created successfully" });
+    } catch (error) {
+      console.error("Error creating default todos:", error);
+      res.status(500).json({ message: "Failed to create default todos" });
+    }
+  });
+
   app.put('/api/projects/:id', isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
