@@ -20,7 +20,6 @@ import { useLocation } from "wouter";
 
 const companySetupSchema = z.object({
   name: z.string().min(2, "Company name must be at least 2 characters"),
-  slug: z.string().min(2, "Company slug must be at least 2 characters").regex(/^[a-z0-9-]+$/, "Slug can only contain lowercase letters, numbers, and hyphens"),
   website: z.string().url().optional().or(z.literal("")),
   phone: z.string().min(10, "Phone number must be at least 10 characters"),
   email: z.string().email("Please enter a valid email address"),
@@ -60,6 +59,15 @@ export default function CompanySetup() {
   const form = useForm<CompanySetupForm>({
     resolver: zodResolver(companySetupSchema),
     defaultValues: {
+      name: "",
+      website: "",
+      phone: "",
+      email: "",
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      description: "",
       industry: "pool_construction",
     },
   });
@@ -67,6 +75,13 @@ export default function CompanySetup() {
   const locationForm = useForm<LocationForm>({
     resolver: zodResolver(locationSchema),
     defaultValues: {
+      name: "",
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      phone: "",
+      email: "",
       isPrimary: locations.length === 0,
     },
   });
@@ -79,7 +94,15 @@ export default function CompanySetup() {
 
   const createCompanyMutation = useMutation({
     mutationFn: async (data: CompanySetupForm & { locations: LocationForm[] }) => {
-      const response = await apiRequest("POST", "/api/companies", data);
+      // Auto-generate slug from company name
+      const slug = data.name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-') // Replace spaces with hyphens
+        .replace(/-+/g, '-') // Replace multiple hyphens with single
+        .trim();
+      
+      const response = await apiRequest("POST", "/api/companies", { ...data, slug });
       return response.json();
     },
     onSuccess: (data) => {
@@ -287,35 +310,19 @@ export default function CompanySetup() {
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(() => setStep(2))} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Name *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Acme Pool Construction" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="slug"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Company Slug *</FormLabel>
-                          <FormControl>
-                            <Input placeholder="acme-pool" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Acme Pool Construction" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField

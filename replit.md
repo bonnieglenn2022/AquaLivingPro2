@@ -7,6 +7,7 @@ AquaLiving Pro is a comprehensive business management application specifically d
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Auto-generate company slugs from company names instead of asking users to create them manually.
 
 ## System Architecture
 
