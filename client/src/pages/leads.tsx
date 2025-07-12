@@ -185,10 +185,7 @@ export default function Leads() {
   const getSalespersonDisplayName = (salesperson: string | null) => {
     if (!salesperson || salesperson === "unassigned") return "Unassigned";
     switch (salesperson) {
-      case "john_smith": return "John Smith";
-      case "sarah_johnson": return "Sarah Johnson";
-      case "mike_davis": return "Mike Davis";
-      case "emily_brown": return "Emily Brown";
+      case "tracy_glenn": return "Tracy Glenn";
       default: return salesperson;
     }
   };
@@ -442,10 +439,7 @@ export default function Leads() {
                           <SelectValue placeholder="Select salesperson" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="john_smith">John Smith</SelectItem>
-                          <SelectItem value="sarah_johnson">Sarah Johnson</SelectItem>
-                          <SelectItem value="mike_davis">Mike Davis</SelectItem>
-                          <SelectItem value="emily_brown">Emily Brown</SelectItem>
+                          <SelectItem value="tracy_glenn">Tracy Glenn</SelectItem>
                           <SelectItem value="unassigned">Unassigned</SelectItem>
                         </SelectContent>
                       </Select>
@@ -640,10 +634,7 @@ export default function Leads() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="john_smith">John Smith</SelectItem>
-                              <SelectItem value="sarah_johnson">Sarah Johnson</SelectItem>
-                              <SelectItem value="mike_davis">Mike Davis</SelectItem>
-                              <SelectItem value="emily_brown">Emily Brown</SelectItem>
+                              <SelectItem value="tracy_glenn">Tracy Glenn</SelectItem>
                               <SelectItem value="unassigned">Unassigned</SelectItem>
                             </SelectContent>
                           </Select>
