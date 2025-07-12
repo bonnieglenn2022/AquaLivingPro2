@@ -89,7 +89,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       const updates = insertCustomerSchema.partial().parse(req.body);
+      
+      // Get current customer to check status change
+      const currentCustomer = await storage.getCustomer(id);
+      if (!currentCustomer) {
+        return res.status(404).json({ message: "Customer not found" });
+      }
+      
       const customer = await storage.updateCustomer(id, updates);
+      
+      // Check if status changed to "sold" - automatically create project
+      if (updates.status === "sold" && currentCustomer.status !== "sold") {
+        try {
+          // Create project for sold lead
+          const projectData = {
+            name: `${customer.firstName} ${customer.lastName} Pool Project`,
+            customerId: customer.id,
+            type: "pool" as const,
+            status: "planning" as const,
+            address: customer.address || "",
+            city: customer.city || "",
+            state: customer.state || "",
+            zipCode: customer.zipCode || "",
+            description: `Pool project for ${customer.firstName} ${customer.lastName}`,
+          };
+          
+          const project = await storage.createProject(projectData);
+          
+          // Create activity log for project creation
+          await storage.createActivity({
+            type: "project_created",
+            description: `Project automatically created from sold lead: ${customer.firstName} ${customer.lastName}`,
+            projectId: project.id,
+            userId: (req.user as any)?.claims?.sub || "system",
+          });
+          
+          console.log(`Automatically created project ${project.id} for sold customer ${customer.id}`);
+        } catch (projectError) {
+          console.error("Error creating project for sold customer:", projectError);
+          // Don't fail the customer update if project creation fails
+        }
+      }
+      
       res.json(customer);
     } catch (error) {
       if (error instanceof z.ZodError) {
