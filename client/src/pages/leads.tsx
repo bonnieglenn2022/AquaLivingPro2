@@ -24,6 +24,10 @@ export default function Leads() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [formData, setFormData] = useState({
+    leadSource: "",
+    priority: "warm"
+  });
 
   const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: ["/api/customers"],
@@ -40,6 +44,7 @@ export default function Leads() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       setIsCreateDialogOpen(false);
+      setFormData({ leadSource: "", priority: "warm" }); // Reset form
       toast({
         title: "Success",
         description: "Lead created successfully",
@@ -161,23 +166,24 @@ export default function Leads() {
 
   const handleCreateLead = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    const form = new FormData(e.currentTarget);
     
     const leadData: InsertCustomer = {
-      firstName: formData.get("firstName") as string,
-      lastName: formData.get("lastName") as string,
-      email: formData.get("email") as string || undefined,
-      phone: formData.get("phone") as string || undefined,
-      address: formData.get("address") as string || undefined,
-      city: formData.get("city") as string || undefined,
-      state: formData.get("state") as string || undefined,
-      zipCode: formData.get("zipCode") as string || undefined,
-      leadSource: formData.get("leadSource") as string || undefined,
-      status: formData.get("status") as string || "lead",
-      priority: formData.get("priority") as string || "warm",
-      notes: formData.get("notes") as string || undefined,
+      firstName: form.get("firstName") as string,
+      lastName: form.get("lastName") as string,
+      email: form.get("email") as string || null,
+      phone: form.get("phone") as string || null,
+      address: form.get("address") as string || null,
+      city: form.get("city") as string || null,
+      state: form.get("state") as string || null,
+      zipCode: form.get("zipCode") as string || null,
+      leadSource: formData.leadSource || null,
+      status: "lead", // Always set as lead for new entries
+      priority: formData.priority || "warm",
+      notes: form.get("notes") as string || null,
     };
 
+    console.log("Creating lead with data:", leadData);
     createCustomerMutation.mutate(leadData);
   };
 
@@ -312,7 +318,10 @@ export default function Leads() {
                       </div>
                       <div>
                         <Label htmlFor="leadSource">Lead Source</Label>
-                        <Select name="leadSource">
+                        <Select 
+                          value={formData.leadSource} 
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, leadSource: value }))}
+                        >
                           <SelectTrigger>
                             <SelectValue placeholder="Select source" />
                           </SelectTrigger>
@@ -329,7 +338,10 @@ export default function Leads() {
                       </div>
                       <div>
                         <Label htmlFor="priority">Priority</Label>
-                        <Select name="priority" defaultValue="warm">
+                        <Select 
+                          value={formData.priority} 
+                          onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value }))}
+                        >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -368,7 +380,10 @@ export default function Leads() {
                     </div>
 
                     <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                      <Button type="button" variant="outline" onClick={() => {
+                        setIsCreateDialogOpen(false);
+                        setFormData({ leadSource: "", priority: "warm" });
+                      }}>
                         Cancel
                       </Button>
                       <Button type="submit" disabled={createCustomerMutation.isPending}>
