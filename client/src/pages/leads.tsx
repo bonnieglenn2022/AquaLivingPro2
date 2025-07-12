@@ -51,6 +51,7 @@ export default function Leads() {
       });
     },
     onError: (error) => {
+      console.error("Error creating lead:", error);
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -64,7 +65,7 @@ export default function Leads() {
       }
       toast({
         title: "Error",
-        description: "Failed to create lead",
+        description: `Failed to create lead: ${error.message}`,
         variant: "destructive",
       });
     },
