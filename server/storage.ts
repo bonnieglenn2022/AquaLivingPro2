@@ -12,6 +12,7 @@ import {
   changeOrders,
   activities,
   projectTodos,
+  internalMessages,
   type User,
   type UpsertUser,
   type Customer,
@@ -36,6 +37,8 @@ import {
   type InsertActivity,
   type ProjectTodo,
   type InsertProjectTodo,
+  type InternalMessage,
+  type InsertInternalMessage,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, like, count } from "drizzle-orm";
@@ -124,6 +127,12 @@ export interface IStorage {
   updateProjectTodo(id: number, updates: Partial<InsertProjectTodo>): Promise<ProjectTodo>;
   deleteProjectTodo(id: number): Promise<void>;
   createDefaultTodos(projectId: number): Promise<void>;
+  getNextTodo(projectId: number): Promise<ProjectTodo | undefined>;
+
+  // Internal Message operations
+  getInternalMessages(recipientId: string): Promise<InternalMessage[]>;
+  createInternalMessage(message: InsertInternalMessage): Promise<InternalMessage>;
+  markMessageAsRead(messageId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -528,6 +537,38 @@ export class DatabaseStorage implements IStorage {
     }));
 
     await db.insert(projectTodos).values(todosToInsert);
+  }
+  async getNextTodo(projectId: number): Promise<ProjectTodo | undefined> {
+    const [nextTodo] = await db
+      .select()
+      .from(projectTodos)
+      .where(and(eq(projectTodos.projectId, projectId), eq(projectTodos.completed, false)))
+      .orderBy(projectTodos.order)
+      .limit(1);
+    return nextTodo;
+  }
+
+  async getInternalMessages(recipientId: string): Promise<InternalMessage[]> {
+    return await db
+      .select()
+      .from(internalMessages)
+      .where(eq(internalMessages.recipientId, recipientId))
+      .orderBy(desc(internalMessages.createdAt));
+  }
+
+  async createInternalMessage(message: InsertInternalMessage): Promise<InternalMessage> {
+    const [newMessage] = await db
+      .insert(internalMessages)
+      .values(message)
+      .returning();
+    return newMessage;
+  }
+
+  async markMessageAsRead(messageId: number): Promise<void> {
+    await db
+      .update(internalMessages)
+      .set({ read: true })
+      .where(eq(internalMessages.id, messageId));
   }
 }
 

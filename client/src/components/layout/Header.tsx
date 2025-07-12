@@ -7,6 +7,7 @@ import {
   LogOut
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { MessageBell } from "@/components/notifications/MessageBell";
 
 interface HeaderProps {
   title: string;
@@ -45,9 +46,7 @@ export function Header({ title, onMobileMenuToggle }: HeaderProps) {
             />
           </div>
           
-          <Button variant="ghost" size="sm">
-            <Bell className="w-5 h-5" />
-          </Button>
+          <MessageBell />
           
           <div className="flex items-center space-x-3">
             {user?.profileImageUrl ? (

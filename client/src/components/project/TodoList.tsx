@@ -5,7 +5,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { CheckCircle, Circle, Plus, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CheckCircle, Circle, Plus, Clock, Calendar, Edit3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -17,6 +20,8 @@ interface TodoListProps {
 
 export function TodoList({ projectId }: TodoListProps) {
   const { toast } = useToast();
+  const [editingTodo, setEditingTodo] = useState<ProjectTodo | null>(null);
+  const [completionDate, setCompletionDate] = useState("");
 
   const { data: todos = [], isLoading } = useQuery({
     queryKey: ["/api/projects", projectId, "todos"],
@@ -61,10 +66,31 @@ export function TodoList({ projectId }: TodoListProps) {
   });
 
   const handleTodoToggle = (todo: ProjectTodo) => {
-    updateTodoMutation.mutate({
-      id: todo.id,
-      updates: { completed: !todo.completed },
-    });
+    if (!todo.completed) {
+      // If marking as complete, show date picker
+      setEditingTodo(todo);
+      setCompletionDate(new Date().toISOString().split('T')[0]);
+    } else {
+      // If unmarking as complete
+      updateTodoMutation.mutate({
+        id: todo.id,
+        updates: { completed: false },
+      });
+    }
+  };
+
+  const handleDateConfirm = () => {
+    if (editingTodo) {
+      updateTodoMutation.mutate({
+        id: editingTodo.id,
+        updates: { 
+          completed: true,
+          completedAt: new Date(completionDate).toISOString()
+        },
+      });
+      setEditingTodo(null);
+      setCompletionDate("");
+    }
   };
 
   const completedCount = todos.filter((todo: ProjectTodo) => todo.completed).length;
@@ -151,6 +177,18 @@ export function TodoList({ projectId }: TodoListProps) {
                     <span className="text-xs text-green-600">
                       Completed {new Date(todo.completedAt).toLocaleDateString()}
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 w-5 p-0 ml-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingTodo(todo);
+                        setCompletionDate(new Date(todo.completedAt).toISOString().split('T')[0]);
+                      }}
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
                   </div>
                 )}
               </div>
@@ -165,6 +203,42 @@ export function TodoList({ projectId }: TodoListProps) {
           </div>
         )}
       </CardContent>
+
+      {/* Date Picker Dialog */}
+      <Dialog open={!!editingTodo} onOpenChange={(open) => !open && setEditingTodo(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set Completion Date</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="completion-date">Completion Date</Label>
+              <Input
+                id="completion-date"
+                type="date"
+                value={completionDate}
+                onChange={(e) => setCompletionDate(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setEditingTodo(null)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleDateConfirm}
+                disabled={!completionDate}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Confirm
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

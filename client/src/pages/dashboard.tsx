@@ -11,11 +11,29 @@ import { ProjectTimeline } from "@/components/dashboard/ProjectTimeline";
 import { EquipmentStatus } from "@/components/dashboard/EquipmentStatus";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { RecentLeads } from "@/components/dashboard/RecentLeads";
+import { ProjectStatus } from "@/components/dashboard/ProjectStatus";
+import { useQuery } from "@tanstack/react-query";
+import type { Project } from "@shared/schema";
 
 export default function Dashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Get first active project for project status display
+  const { data: projects = [] } = useQuery({
+    queryKey: ["/api/projects"],
+    queryFn: async () => {
+      const response = await fetch("/api/projects");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    },
+    enabled: isAuthenticated,
+  });
+
+  const activeProject = projects.find((p: Project) => p.status !== "completed" && p.status !== "on_hold");
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -73,7 +91,10 @@ export default function Dashboard() {
             <div className="lg:col-span-2">
               <ProjectTimeline />
             </div>
-            <EquipmentStatus />
+            <div className="space-y-4">
+              {activeProject && <ProjectStatus project={activeProject} />}
+              <EquipmentStatus />
+            </div>
           </div>
 
           {/* Quick Actions & Lead Management */}

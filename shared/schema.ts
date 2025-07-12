@@ -50,6 +50,7 @@ export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   customerId: integer("customer_id").references(() => customers.id),
+  salespersonId: varchar("salesperson_id").references(() => users.id),
   types: text("types").array().notNull().default(["pool_spa"]), // pool_spa, pool_only, decking, patio_cover, pergola, outdoor_kitchen, driveway
   status: text("status").notNull().default("planning"), // planning, excavation, plumbing, electrical, gunite, finishing, completed, on_hold
   budget: decimal("budget", { precision: 10, scale: 2 }),
@@ -206,6 +207,19 @@ export const activities = pgTable("activities", {
   type: text("type").notNull(), // photo_upload, status_change, task_completed, etc.
   description: text("description").notNull(),
   metadata: jsonb("metadata"), // additional data like file paths, old/new values, etc.
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Internal messages for salesperson notifications
+export const internalMessages = pgTable("internal_messages", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id),
+  todoId: integer("todo_id").references(() => projectTodos.id),
+  recipientId: varchar("recipient_id").notNull(),
+  senderId: varchar("sender_id").notNull(),
+  subject: varchar("subject").notNull(),
+  message: text("message").notNull(),
+  read: boolean("read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -402,3 +416,5 @@ export type Activity = typeof activities.$inferSelect;
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type ProjectTodo = typeof projectTodos.$inferSelect;
 export type InsertProjectTodo = z.infer<typeof insertProjectTodoSchema>;
+export type InternalMessage = typeof internalMessages.$inferSelect;
+export type InsertInternalMessage = typeof internalMessages.$inferInsert;

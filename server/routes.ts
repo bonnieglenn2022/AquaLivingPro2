@@ -218,6 +218,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/projects/:id/todos/next', isAuthenticated, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const nextTodo = await storage.getNextTodo(projectId);
+      res.json(nextTodo || null);
+    } catch (error) {
+      console.error("Error fetching next todo:", error);
+      res.status(500).json({ message: "Failed to fetch next todo" });
+    }
+  });
+
   app.post('/api/projects/:id/todos', isAuthenticated, async (req, res) => {
     try {
       const projectId = parseInt(req.params.id);
@@ -245,6 +256,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const todo = await storage.updateProjectTodo(id, updates);
+      
+      // If todo was marked as completed, send internal message to salesperson
+      if (updates.completed && todo.projectId) {
+        try {
+          const project = await storage.getProject(todo.projectId);
+          if (project?.salespersonId) {
+            const nextTodo = await storage.getNextTodo(todo.projectId);
+            const message = nextTodo 
+              ? `Todo "${todo.title}" completed. Next todo: "${nextTodo.title}"`
+              : `Todo "${todo.title}" completed. All todos are now complete!`;
+            
+            await storage.createInternalMessage({
+              projectId: todo.projectId,
+              todoId: todo.id,
+              recipientId: project.salespersonId,
+              senderId: (req.user as any)?.claims?.sub || "system",
+              subject: `Todo Completed: ${project.name}`,
+              message: message,
+            });
+          }
+        } catch (messageError) {
+          console.error("Error sending internal message:", messageError);
+          // Don't fail the todo update if messaging fails
+        }
+      }
+      
       res.json(todo);
     } catch (error) {
       console.error("Error updating todo:", error);
@@ -260,6 +297,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting todo:", error);
       res.status(500).json({ message: "Failed to delete todo" });
+    }
+  });
+
+  // Internal Message routes
+  app.get('/api/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const messages = await storage.getInternalMessages(userId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.put('/api/messages/:id/read', isAuthenticated, async (req, res) => {
+    try {
+      const messageId = parseInt(req.params.id);
+      await storage.markMessageAsRead(messageId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+      res.status(500).json({ message: "Failed to mark message as read" });
     }
   });
 
