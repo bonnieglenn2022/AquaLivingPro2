@@ -26,7 +26,8 @@ export default function Leads() {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [formData, setFormData] = useState({
     leadSource: "",
-    priority: "warm"
+    priority: "warm",
+    salesperson: ""
   });
 
   const { data: customers = [], isLoading: customersLoading } = useQuery({
@@ -41,7 +42,7 @@ export default function Leads() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       setIsCreateDialogOpen(false);
-      setFormData({ leadSource: "", priority: "warm" }); // Reset form
+      setFormData({ leadSource: "", priority: "warm", salesperson: "" }); // Reset form
       toast({
         title: "Success",
         description: "Lead created successfully",
@@ -181,6 +182,17 @@ export default function Leads() {
     }
   };
 
+  const getSalespersonDisplayName = (salesperson: string | null) => {
+    if (!salesperson || salesperson === "unassigned") return "Unassigned";
+    switch (salesperson) {
+      case "john_smith": return "John Smith";
+      case "sarah_johnson": return "Sarah Johnson";
+      case "mike_davis": return "Mike Davis";
+      case "emily_brown": return "Emily Brown";
+      default: return salesperson;
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "hot": return "bg-red-100 text-red-800";
@@ -206,6 +218,7 @@ export default function Leads() {
       leadSource: formData.leadSource || null,
       status: "new_lead", // Always set as new_lead for new entries
       priority: formData.priority || "warm",
+      salesperson: formData.salesperson || null,
       notes: form.get("notes") as string || null,
     };
 
@@ -224,6 +237,13 @@ export default function Leads() {
     updateCustomerMutation.mutate({
       id: customerId,
       updates: { priority: newPriority },
+    });
+  };
+
+  const handleSalespersonChange = (customerId: number, newSalesperson: string) => {
+    updateCustomerMutation.mutate({
+      id: customerId,
+      updates: { salesperson: newSalesperson },
     });
   };
 
@@ -413,6 +433,25 @@ export default function Leads() {
                     </div>
 
                     <div>
+                      <Label htmlFor="salesperson">Assigned Salesperson</Label>
+                      <Select 
+                        value={formData.salesperson} 
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, salesperson: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select salesperson" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="john_smith">John Smith</SelectItem>
+                          <SelectItem value="sarah_johnson">Sarah Johnson</SelectItem>
+                          <SelectItem value="mike_davis">Mike Davis</SelectItem>
+                          <SelectItem value="emily_brown">Emily Brown</SelectItem>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
                       <Label htmlFor="notes">Notes</Label>
                       <Textarea id="notes" name="notes" placeholder="Initial notes about the lead..." />
                     </div>
@@ -420,7 +459,7 @@ export default function Leads() {
                     <div className="flex justify-end gap-2">
                       <Button type="button" variant="outline" onClick={() => {
                         setIsCreateDialogOpen(false);
-                        setFormData({ leadSource: "", priority: "warm" });
+                        setFormData({ leadSource: "", priority: "warm", salesperson: "" });
                       }}>
                         Cancel
                       </Button>
@@ -536,6 +575,12 @@ export default function Leads() {
                                     <span>Source: {customer.leadSource}</span>
                                   </div>
                                 )}
+                                {customer.salesperson && (
+                                  <div className="flex items-center gap-1">
+                                    <User className="h-4 w-4" />
+                                    <span>Sales: {getSalespersonDisplayName(customer.salesperson)}</span>
+                                  </div>
+                                )}
                               </div>
 
                               {customer.notes && (
@@ -583,6 +628,23 @@ export default function Leads() {
                               <SelectItem value="hot">Hot</SelectItem>
                               <SelectItem value="warm">Warm</SelectItem>
                               <SelectItem value="cold">Cold</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Select
+                            value={customer.salesperson || "unassigned"}
+                            onValueChange={(value) => handleSalespersonChange(customer.id, value)}
+                            disabled={updateCustomerMutation.isPending}
+                          >
+                            <SelectTrigger className="w-36">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="john_smith">John Smith</SelectItem>
+                              <SelectItem value="sarah_johnson">Sarah Johnson</SelectItem>
+                              <SelectItem value="mike_davis">Mike Davis</SelectItem>
+                              <SelectItem value="emily_brown">Emily Brown</SelectItem>
+                              <SelectItem value="unassigned">Unassigned</SelectItem>
                             </SelectContent>
                           </Select>
 
