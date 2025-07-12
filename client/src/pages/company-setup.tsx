@@ -10,12 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Building, MapPin, Phone, Mail, FileText, Users, Plus, X } from "lucide-react";
+import { Building, Phone, Mail, FileText, Users } from "lucide-react";
 import { useLocation } from "wouter";
 
 const companySetupSchema = z.object({
@@ -31,19 +30,9 @@ const companySetupSchema = z.object({
   industry: z.string().default("pool_construction"),
 });
 
-const locationSchema = z.object({
-  name: z.string().min(2, "Location name must be at least 2 characters"),
-  address: z.string().min(5, "Address must be at least 5 characters"),
-  city: z.string().min(2, "City must be at least 2 characters"),
-  state: z.string().min(2, "State must be at least 2 characters"),
-  zipCode: z.string().min(5, "ZIP code must be at least 5 characters"),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
-  isPrimary: z.boolean().default(false),
-});
+
 
 type CompanySetupForm = z.infer<typeof companySetupSchema>;
-type LocationForm = z.infer<typeof locationSchema>;
 
 export default function CompanySetup() {
   const [, setLocation] = useLocation();
@@ -51,8 +40,6 @@ export default function CompanySetup() {
   const { toast } = useToast();
   const [mode, setMode] = useState<"choose" | "create" | "join">("choose");
   const [step, setStep] = useState(1);
-  const [locations, setLocations] = useState<LocationForm[]>([]);
-  const [showLocationForm, setShowLocationForm] = useState(false);
   const [companyCode, setCompanyCode] = useState("");
   const [joinCode, setJoinCode] = useState("");
 
@@ -72,19 +59,7 @@ export default function CompanySetup() {
     },
   });
 
-  const locationForm = useForm<LocationForm>({
-    resolver: zodResolver(locationSchema),
-    defaultValues: {
-      name: "",
-      address: "",
-      city: "",
-      state: "",
-      zipCode: "",
-      phone: "",
-      email: "",
-      isPrimary: locations.length === 0,
-    },
-  });
+
 
   // Check if user already has a company
   const { data: existingCompany } = useQuery({
@@ -93,7 +68,7 @@ export default function CompanySetup() {
   });
 
   const createCompanyMutation = useMutation({
-    mutationFn: async (data: CompanySetupForm & { locations: LocationForm[] }) => {
+    mutationFn: async (data: CompanySetupForm) => {
       // Auto-generate slug from company name
       const slug = data.name
         .toLowerCase()
@@ -107,7 +82,7 @@ export default function CompanySetup() {
     },
     onSuccess: (data) => {
       setCompanyCode(data.companyCode);
-      setStep(3);
+      setStep(2);
       queryClient.invalidateQueries({ queryKey: ["/api/user/company"] });
       toast({
         title: "Company Created Successfully!",
@@ -146,19 +121,7 @@ export default function CompanySetup() {
   });
 
   const onSubmit = (data: CompanySetupForm) => {
-    if (locations.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one office location.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    createCompanyMutation.mutate({
-      ...data,
-      locations,
-    });
+    createCompanyMutation.mutate(data);
   };
 
   const handleJoinCompany = () => {
@@ -174,22 +137,7 @@ export default function CompanySetup() {
     joinCompanyMutation.mutate(joinCode.trim().toUpperCase());
   };
 
-  const addLocation = (locationData: LocationForm) => {
-    // If this is primary, make sure no other location is primary
-    if (locationData.isPrimary) {
-      setLocations(prev => prev.map(loc => ({ ...loc, isPrimary: false })));
-    }
-    
-    setLocations(prev => [...prev, locationData]);
-    setShowLocationForm(false);
-    locationForm.reset({
-      isPrimary: false,
-    });
-  };
 
-  const removeLocation = (index: number) => {
-    setLocations(prev => prev.filter((_, i) => i !== index));
-  };
 
   // Note: Company existence is now handled by App.tsx routing
 
@@ -290,10 +238,6 @@ export default function CompanySetup() {
                 </div>
                 <div className={`w-20 h-1 ${step >= 2 ? 'bg-pool-blue' : 'bg-slate-200'}`}></div>
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 2 ? 'bg-pool-blue text-white' : 'bg-slate-200 text-slate-500'}`}>
-                  <MapPin className="w-5 h-5" />
-                </div>
-                <div className={`w-20 h-1 ${step >= 3 ? 'bg-pool-blue' : 'bg-slate-200'}`}></div>
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${step >= 3 ? 'bg-pool-blue text-white' : 'bg-slate-200 text-slate-500'}`}>
                   <Users className="w-5 h-5" />
                 </div>
               </div>
@@ -309,7 +253,7 @@ export default function CompanySetup() {
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(() => setStep(2))} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField
                     control={form.control}
                     name="name"
@@ -447,8 +391,12 @@ export default function CompanySetup() {
                     <Button variant="outline" onClick={() => setMode("choose")}>
                       Back
                     </Button>
-                    <Button type="submit" className="bg-pool-blue hover:bg-pool-blue/90">
-                      Continue to Office Locations
+                    <Button 
+                      type="submit" 
+                      disabled={createCompanyMutation.isPending}
+                      className="bg-pool-blue hover:bg-pool-blue/90"
+                    >
+                      {createCompanyMutation.isPending ? "Creating Company..." : "Create Company"}
                     </Button>
                   </div>
                 </form>
@@ -457,214 +405,9 @@ export default function CompanySetup() {
           </Card>
             )}
 
+
+
         {step === 2 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Office Locations
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Existing Locations */}
-              {locations.length > 0 && (
-                <div className="space-y-4">
-                  <h3 className="font-medium text-slate-900">Added Locations</h3>
-                  {locations.map((location, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium">{location.name}</h4>
-                          {location.isPrimary && <Badge>Primary</Badge>}
-                        </div>
-                        <p className="text-sm text-slate-600">
-                          {location.address}, {location.city}, {location.state} {location.zipCode}
-                        </p>
-                        {location.phone && (
-                          <p className="text-sm text-slate-600">{location.phone}</p>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLocation(index)}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Separator />
-                </div>
-              )}
-
-              {/* Add Location Form */}
-              {!showLocationForm ? (
-                <Button
-                  variant="outline"
-                  onClick={() => setShowLocationForm(true)}
-                  className="w-full"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Office Location
-                </Button>
-              ) : (
-                <div className="border rounded-lg p-4 space-y-4">
-                  <h3 className="font-medium">Add New Location</h3>
-                  <Form {...locationForm}>
-                    <div className="space-y-4">
-                      <FormField
-                        control={locationForm.control}
-                        name="name"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Location Name *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Main Office" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={locationForm.control}
-                        name="address"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Address *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="123 Office St" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <FormField
-                          control={locationForm.control}
-                          name="city"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>City *</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Austin" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={locationForm.control}
-                          name="state"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>State *</FormLabel>
-                              <FormControl>
-                                <Input placeholder="TX" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={locationForm.control}
-                          name="zipCode"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>ZIP Code *</FormLabel>
-                              <FormControl>
-                                <Input placeholder="78701" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={locationForm.control}
-                          name="phone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Phone</FormLabel>
-                              <FormControl>
-                                <Input placeholder="(555) 123-4567" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={locationForm.control}
-                          name="email"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Email</FormLabel>
-                              <FormControl>
-                                <Input placeholder="office@company.com" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="isPrimary"
-                          checked={locationForm.watch("isPrimary")}
-                          onChange={(e) => locationForm.setValue("isPrimary", e.target.checked)}
-                        />
-                        <Label htmlFor="isPrimary">Primary Location</Label>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          onClick={locationForm.handleSubmit(addLocation)}
-                          className="bg-pool-blue hover:bg-pool-blue/90"
-                        >
-                          Add Location
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setShowLocationForm(false);
-                            locationForm.reset();
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  </Form>
-                </div>
-              )}
-
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setStep(1)}>
-                  Back
-                </Button>
-                <Button 
-                  onClick={form.handleSubmit(onSubmit)}
-                  disabled={locations.length === 0 || createCompanyMutation.isPending}
-                  className="bg-pool-blue hover:bg-pool-blue/90"
-                >
-                  {createCompanyMutation.isPending ? "Creating Company..." : "Create Company"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-            )}
-
-        {step === 3 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
