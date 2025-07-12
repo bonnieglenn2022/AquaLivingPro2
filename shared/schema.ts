@@ -14,6 +14,67 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// Companies table for multi-tenant support
+export const companies = pgTable("companies", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  slug: varchar("slug", { length: 100 }).unique().notNull(),
+  logo: varchar("logo"),
+  website: varchar("website"),
+  phone: varchar("phone"),
+  email: varchar("email"),
+  address: text("address"),
+  city: varchar("city"),
+  state: varchar("state"),
+  zipCode: varchar("zip_code"),
+  description: text("description"),
+  industry: varchar("industry").default("pool_construction"),
+  companyCode: varchar("company_code", { length: 10 }).unique().notNull(),
+  ownerId: varchar("owner_id").notNull(),
+  settings: jsonb("settings").default({}),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Company documents table
+export const companyDocuments = pgTable("company_documents", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: varchar("type").notNull(), // 'license', 'insurance', 'contract_template', 'other'
+  fileUrl: text("file_url").notNull(),
+  uploadedBy: varchar("uploaded_by").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Company locations/offices table
+export const companyLocations = pgTable("company_locations", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: text("address").notNull(),
+  city: varchar("city").notNull(),
+  state: varchar("state").notNull(),
+  zipCode: varchar("zip_code").notNull(),
+  phone: varchar("phone"),
+  email: varchar("email"),
+  isPrimary: boolean("is_primary").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User invitations table
+export const userInvitations = pgTable("user_invitations", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  companyId: integer("company_id").notNull().references(() => companies.id),
+  role: varchar("role").notNull().default("user"), // 'admin', 'manager', 'user'
+  invitedBy: varchar("invited_by").notNull(),
+  token: varchar("token", { length: 100 }).unique().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  acceptedAt: timestamp("accepted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // User storage table (Required for Replit Auth)
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().notNull(),
@@ -21,6 +82,9 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  companyId: integer("company_id").references(() => companies.id),
+  role: varchar("role").default("user"), // 'admin', 'manager', 'user'
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -28,6 +92,7 @@ export const users = pgTable("users", {
 // Customers/Leads table
 export const customers = pgTable("customers", {
   id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
   email: text("email"),
@@ -48,6 +113,7 @@ export const customers = pgTable("customers", {
 // Projects table
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
   name: text("name").notNull(),
   customerId: integer("customer_id").references(() => customers.id),
   salespersonId: varchar("salesperson_id").references(() => users.id),
@@ -85,6 +151,7 @@ export const projectTodos = pgTable("project_todos", {
 // Estimates table
 export const estimates = pgTable("estimates", {
   id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
   customerId: integer("customer_id").references(() => customers.id),
   projectType: text("project_type").notNull(),
   status: text("status").notNull().default("draft"), // draft, sent, approved, rejected, expired
@@ -109,6 +176,7 @@ export const estimateItems = pgTable("estimate_items", {
 // Vendors table
 export const vendors = pgTable("vendors", {
   id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
   name: text("name").notNull(),
   type: text("type").notNull(), // equipment_supplier, subcontractor, material_supplier
   contactName: text("contact_name"),
@@ -129,6 +197,7 @@ export const vendors = pgTable("vendors", {
 // Tasks table
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
   projectId: integer("project_id").references(() => projects.id),
   title: text("title").notNull(),
   description: text("description"),
@@ -147,6 +216,7 @@ export const tasks = pgTable("tasks", {
 // Equipment table
 export const equipment = pgTable("equipment", {
   id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
   name: text("name").notNull(),
   model: text("model"),
   brand: text("brand"),
@@ -391,9 +461,39 @@ export const insertProjectTodoSchema = createInsertSchema(projectTodos).omit({
   updatedAt: true,
 });
 
+export const insertCompanySchema = createInsertSchema(companies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCompanyDocumentSchema = createInsertSchema(companyDocuments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCompanyLocationSchema = createInsertSchema(companyLocations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserInvitationSchema = createInsertSchema(userInvitations).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+export type Company = typeof companies.$inferSelect;
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
+export type CompanyDocument = typeof companyDocuments.$inferSelect;
+export type InsertCompanyDocument = z.infer<typeof insertCompanyDocumentSchema>;
+export type CompanyLocation = typeof companyLocations.$inferSelect;
+export type InsertCompanyLocation = z.infer<typeof insertCompanyLocationSchema>;
+export type UserInvitation = typeof userInvitations.$inferSelect;
+export type InsertUserInvitation = z.infer<typeof insertUserInvitationSchema>;
 export type Customer = typeof customers.$inferSelect;
 export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
 export type Project = typeof projects.$inferSelect;

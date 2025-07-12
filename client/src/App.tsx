@@ -4,8 +4,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/landing";
+import CompanySetup from "@/pages/company-setup";
 import Dashboard from "@/pages/dashboard";
 import Projects from "@/pages/projects";
 import Leads from "@/pages/leads";
@@ -16,13 +18,32 @@ import Vendors from "@/pages/vendors";
 import Reports from "@/pages/reports";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  // Check if user has a company (only if authenticated)
+  const { data: userCompany, isLoading: companyLoading } = useQuery({
+    queryKey: ["/api/user/company"],
+    enabled: isAuthenticated && !!user,
+  });
+
+  // Show loading state
+  if (isLoading || (isAuthenticated && companyLoading)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-pool-blue border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
+      {!isAuthenticated ? (
         <Route path="/" component={Landing} />
-      ) : (
+      ) : userCompany ? (
+        // User has a company - show normal app
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/projects" component={Projects} />
@@ -33,6 +54,9 @@ function Router() {
           <Route path="/vendors" component={Vendors} />
           <Route path="/reports" component={Reports} />
         </>
+      ) : (
+        // User needs to set up company
+        <Route path="*" component={CompanySetup} />
       )}
       <Route component={NotFound} />
     </Switch>

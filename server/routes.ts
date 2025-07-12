@@ -2,6 +2,32 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { z } from "zod";
+import { 
+  insertCustomerSchema, 
+  insertProjectSchema, 
+  insertEstimateSchema, 
+  insertEstimateItemSchema, 
+  insertVendorSchema, 
+  insertTaskSchema, 
+  insertEquipmentSchema, 
+  insertChangeOrderSchema, 
+  insertActivitySchema, 
+  insertProjectTodoSchema,
+  insertCompanySchema,
+  insertCompanyLocationSchema,
+  insertUserInvitationSchema
+} from "@shared/schema";
+
+// Utility function to generate company codes
+function generateCompanyCode(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 import { 
   insertCustomerSchema,
   insertProjectSchema,
@@ -28,6 +54,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Company routes
+  app.get('/api/user/company', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      res.json(company);
+    } catch (error) {
+      console.error("Error fetching company:", error);
+      res.status(500).json({ message: "Failed to fetch company" });
+    }
+  });
+
+  app.post('/api/companies', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Check if user already owns a company
+      const existingCompany = await storage.getCompanyByOwnerId(userId);
+      if (existingCompany) {
+        return res.status(400).json({ message: "User already owns a company" });
+      }
+
+      const data = req.body;
+      const { locations, ...companyData } = data;
+
+      // Generate a unique company code
+      let companyCode: string;
+      let attempts = 0;
+      do {
+        companyCode = generateCompanyCode();
+        const existing = await storage.getCompanyByCode(companyCode);
+        if (!existing) break;
+        attempts++;
+      } while (attempts < 10);
+
+      if (attempts >= 10) {
+        return res.status(500).json({ message: "Failed to generate unique company code" });
+      }
+
+      // Validate company data
+      const validatedCompany = insertCompanySchema.parse({
+        ...companyData,
+        companyCode,
+        ownerId: userId,
+        slug: companyData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+      });
+
+      // Create company
+      const company = await storage.createCompany(validatedCompany);
+
+      // Create company locations
+      if (locations && Array.isArray(locations)) {
+        for (const location of locations) {
+          const validatedLocation = insertCompanyLocationSchema.parse({
+            ...location,
+            companyId: company.id,
+          });
+          await storage.createCompanyLocation(validatedLocation);
+        }
+      }
+
+      // Update user with company and admin role
+      await storage.upsertUser({
+        id: userId,
+        companyId: company.id,
+        role: 'admin',
+        updatedAt: new Date(),
+      });
+
+      res.json(company);
+    } catch (error) {
+      console.error("Error creating company:", error);
+      res.status(500).json({ message: "Failed to create company" });
     }
   });
 

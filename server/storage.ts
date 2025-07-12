@@ -1,5 +1,8 @@
 import {
   users,
+  companies,
+  companyLocations,
+  userInvitations,
   customers,
   projects,
   estimates,
@@ -15,6 +18,12 @@ import {
   internalMessages,
   type User,
   type UpsertUser,
+  type Company,
+  type InsertCompany,
+  type CompanyLocation,
+  type InsertCompanyLocation,
+  type UserInvitation,
+  type InsertUserInvitation,
   type Customer,
   type InsertCustomer,
   type Project,
@@ -47,6 +56,22 @@ export interface IStorage {
   // User operations (Required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+
+  // Company operations
+  getCompany(id: number): Promise<Company | undefined>;
+  getCompanyByOwnerId(ownerId: string): Promise<Company | undefined>;
+  getCompanyByCode(companyCode: string): Promise<Company | undefined>;
+  createCompany(company: InsertCompany): Promise<Company>;
+  updateCompany(id: number, updates: Partial<InsertCompany>): Promise<Company>;
+
+  // Company locations
+  getCompanyLocations(companyId: number): Promise<CompanyLocation[]>;
+  createCompanyLocation(location: InsertCompanyLocation): Promise<CompanyLocation>;
+
+  // User invitations
+  getInvitation(token: string): Promise<UserInvitation | undefined>;
+  createInvitation(invitation: InsertUserInvitation): Promise<UserInvitation>;
+  acceptInvitation(token: string, userId: string): Promise<void>;
 
   // Customer operations
   getCustomers(): Promise<Customer[]>;
@@ -155,6 +180,97 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  // Company operations
+  async getCompany(id: number): Promise<Company | undefined> {
+    const [company] = await db.select().from(companies).where(eq(companies.id, id));
+    return company;
+  }
+
+  async getCompanyByOwnerId(ownerId: string): Promise<Company | undefined> {
+    const [company] = await db.select().from(companies).where(eq(companies.ownerId, ownerId));
+    return company;
+  }
+
+  async getCompanyByCode(companyCode: string): Promise<Company | undefined> {
+    const [company] = await db.select().from(companies).where(eq(companies.companyCode, companyCode));
+    return company;
+  }
+
+  async createCompany(companyData: InsertCompany): Promise<Company> {
+    const [company] = await db
+      .insert(companies)
+      .values(companyData)
+      .returning();
+    return company;
+  }
+
+  async updateCompany(id: number, updates: Partial<InsertCompany>): Promise<Company> {
+    const [company] = await db
+      .update(companies)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(companies.id, id))
+      .returning();
+    return company;
+  }
+
+  // Company locations
+  async getCompanyLocations(companyId: number): Promise<CompanyLocation[]> {
+    return await db.select().from(companyLocations).where(eq(companyLocations.companyId, companyId));
+  }
+
+  async createCompanyLocation(locationData: InsertCompanyLocation): Promise<CompanyLocation> {
+    const [location] = await db
+      .insert(companyLocations)
+      .values(locationData)
+      .returning();
+    return location;
+  }
+
+  // User invitations
+  async getInvitation(token: string): Promise<UserInvitation | undefined> {
+    const [invitation] = await db.select().from(userInvitations).where(eq(userInvitations.token, token));
+    return invitation;
+  }
+
+  async createInvitation(invitationData: InsertUserInvitation): Promise<UserInvitation> {
+    const [invitation] = await db
+      .insert(userInvitations)
+      .values(invitationData)
+      .returning();
+    return invitation;
+  }
+
+  async acceptInvitation(token: string, userId: string): Promise<void> {
+    const invitation = await this.getInvitation(token);
+    if (!invitation) {
+      throw new Error("Invitation not found");
+    }
+
+    if (invitation.expiresAt < new Date()) {
+      throw new Error("Invitation expired");
+    }
+
+    if (invitation.acceptedAt) {
+      throw new Error("Invitation already accepted");
+    }
+
+    // Update user with company and role
+    await db
+      .update(users)
+      .set({
+        companyId: invitation.companyId,
+        role: invitation.role,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+
+    // Mark invitation as accepted
+    await db
+      .update(userInvitations)
+      .set({ acceptedAt: new Date() })
+      .where(eq(userInvitations.token, token));
   }
 
   // Customer operations
