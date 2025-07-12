@@ -646,24 +646,24 @@ export default function Leads() {
                               className="hidden" 
                               id={`file-upload-${selectedCustomer.id}`}
                               onChange={(e) => {
-                                // Handle file upload here
                                 const files = e.target.files;
-                                if (files) {
+                                if (files && files.length > 0) {
+                                  const fileNames = Array.from(files).map(f => f.name).join(', ');
                                   toast({
                                     title: "Files Selected",
-                                    description: `${files.length} file(s) ready to upload`,
+                                    description: `Selected: ${fileNames}`,
                                   });
                                 }
                               }}
                             />
                             <Label 
                               htmlFor={`file-upload-${selectedCustomer.id}`} 
-                              className="cursor-pointer"
+                              className="cursor-pointer inline-block"
                             >
-                              <Button variant="outline" type="button" className="mt-2">
-                                <Upload className="h-4 w-4 mr-2" />
+                              <div className="bg-white border border-slate-200 hover:bg-slate-50 rounded-md px-4 py-2 text-sm font-medium text-slate-700 mt-2 inline-flex items-center gap-2">
+                                <Upload className="h-4 w-4" />
                                 Choose Files
-                              </Button>
+                              </div>
                             </Label>
                             <p className="text-xs text-slate-500 mt-2">
                               Supports: PDF, JPG, PNG, GIF, DOC, DOCX
