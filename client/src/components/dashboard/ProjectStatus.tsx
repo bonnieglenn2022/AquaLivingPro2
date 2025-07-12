@@ -100,7 +100,11 @@ export function ProjectStatus({ project }: ProjectStatusProps) {
                 onClick={handleCompleteTodo}
                 disabled={updateTodoMutation.isPending}
               >
-                <Circle className="h-5 w-5 text-blue-500 hover:text-blue-600 cursor-pointer" />
+                {updateTodoMutation.isPending ? (
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                ) : (
+                  <Circle className="h-5 w-5 text-blue-500 hover:text-blue-600 cursor-pointer" />
+                )}
               </Button>
               <div>
                 <p className="font-medium text-sm">{nextTodo.title}</p>
