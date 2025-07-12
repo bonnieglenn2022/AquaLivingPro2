@@ -37,6 +37,7 @@ export default function Leads() {
     priority: "warm",
     salesperson: ""
   });
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const { data: customers = [], isLoading: customersLoading } = useQuery({
     queryKey: ["/api/customers"],
@@ -299,10 +300,16 @@ export default function Leads() {
 
   return (
     <div className="flex h-screen bg-slate-50">
-      <AppSidebar />
+      <AppSidebar 
+        isMobileOpen={isMobileSidebarOpen} 
+        onMobileClose={() => setIsMobileSidebarOpen(false)} 
+      />
       
       <main className="flex-1 overflow-hidden">
-        <Header title="CRM & Leads" />
+        <Header 
+          title="CRM & Leads" 
+          onMobileMenuToggle={() => setIsMobileSidebarOpen(true)}
+        />
         
         <div className="p-6 overflow-y-auto h-full">
           {/* Metrics Cards */}

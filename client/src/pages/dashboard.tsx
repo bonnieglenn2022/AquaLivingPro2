@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -15,6 +15,7 @@ import { RecentLeads } from "@/components/dashboard/RecentLeads";
 export default function Dashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -44,10 +45,16 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-slate-50">
-      <AppSidebar />
+      <AppSidebar 
+        isMobileOpen={isMobileSidebarOpen} 
+        onMobileClose={() => setIsMobileSidebarOpen(false)} 
+      />
       
       <main className="flex-1 overflow-hidden">
-        <Header title="Project Dashboard" />
+        <Header 
+          title="Project Dashboard" 
+          onMobileMenuToggle={() => setIsMobileSidebarOpen(true)}
+        />
         
         <div className="p-6 overflow-y-auto h-full">
           {/* Key Metrics Cards */}
