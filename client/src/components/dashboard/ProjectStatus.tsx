@@ -27,7 +27,7 @@ export function ProjectStatus({ project }: ProjectStatusProps) {
 
   const updateTodoMutation = useMutation({
     mutationFn: async ({ todoId, completedAt }: { todoId: number; completedAt: string }) => {
-      await apiRequest(`/api/projects/${project.id}/todos/${todoId}`, {
+      await apiRequest(`/api/todos/${todoId}`, {
         method: "PUT",
         body: JSON.stringify({
           completed: true,
