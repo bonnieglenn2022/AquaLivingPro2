@@ -11,6 +11,15 @@ Auto-generate company slugs from company names instead of asking users to create
 Remove Office Locations setup step to streamline the company creation process.
 Single vCard import functionality: User prefers importing individual contacts from iPhone as vCard (.vcf) files rather than bulk imports or manual entry forms.
 
+## Recent Changes
+
+**Cost Management System Completed** (January 13, 2025)
+- Built comprehensive cost management with categories (excavation, rebar, gunite, plaster, equipment, plumbing, electrical, permitting)
+- Implemented multi-tenant database structure with company-specific data isolation
+- Created cost items tracking with supplier information, pricing history, and unit types
+- Added frontend interface for managing cost categories and items
+- Fixed data fetching and caching issues for real-time cost item display
+
 ## System Architecture
 
 ### Frontend Architecture

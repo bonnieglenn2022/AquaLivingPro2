@@ -55,7 +55,10 @@ export default function Costs() {
   });
 
   const { data: items = [] } = useQuery({
-    queryKey: ["/api/cost-items", selectedCategory?.id],
+    queryKey: ["/api/cost-items", { categoryId: selectedCategory?.id }],
+    queryFn: () => selectedCategory 
+      ? fetch(`/api/cost-items?categoryId=${selectedCategory.id}`).then(res => res.json())
+      : [],
     enabled: isAuthenticated && !!selectedCategory,
   });
 
@@ -96,6 +99,8 @@ export default function Costs() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cost-items"] });
       setIsItemDialogOpen(false);
+      setSelectedItem(null);
+      setIsEditingItem(false);
       toast({
         title: "Cost Item Created",
         description: "Cost item has been created successfully.",
