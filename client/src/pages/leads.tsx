@@ -92,52 +92,7 @@ export default function Leads() {
     },
   });
 
-  const importContactsMutation = useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await fetch('/api/customers/import-contacts', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Import failed');
-      }
-      
-      return response.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      setIsContactsDialogOpen(false);
-      toast({
-        title: "Import Complete",
-        description: data.message,
-      });
-    },
-    onError: (error) => {
-      console.error("Error importing contacts:", error);
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Import Failed",
-        description: `Failed to import contacts: ${error.message}`,
-        variant: "destructive",
-      });
-    },
-  });
+
 
   const createCustomerMutation = useMutation({
     mutationFn: async (customerData: InsertCustomer) => {
@@ -146,6 +101,7 @@ export default function Leads() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       setIsCreateDialogOpen(false);
+      setIsContactsDialogOpen(false);
       setFormData({ leadSource: "", priority: "warm", salesperson: "" });
       toast({
         title: "Lead Created",
@@ -440,7 +396,7 @@ export default function Leads() {
                   <DialogTrigger asChild>
                     <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white">
                       <Smartphone className="h-4 w-4 mr-2" />
-                      Import iPhone Contacts
+                      Quick Add Contact
                     </Button>
                   </DialogTrigger>
                 </Dialog>
@@ -901,75 +857,62 @@ Jane,Smith,jane.smith@email.com,(555) 987-6543,456 Oak Ave,Dallas,TX,75201,Refer
         </DialogContent>
       </Dialog>
 
-      {/* Import iPhone Contacts Dialog */}
+      {/* Quick Add Contact Dialog */}
       <Dialog open={isContactsDialogOpen} onOpenChange={setIsContactsDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Import iPhone Contacts</DialogTitle>
+            <DialogTitle>Quick Add Contact</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="border-2 border-dashed border-green-300 rounded-lg p-8 text-center">
-              <Smartphone className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept=".vcf"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      importContactsMutation.mutate(file);
-                    }
-                  }}
-                  disabled={importContactsMutation.isPending}
-                />
-                <div>
-                  <p className="text-lg font-medium text-slate-900 mb-2">
-                    Drop your contacts file here or click to browse
-                  </p>
-                  <p className="text-sm text-slate-600">
-                    Supports vCard (.vcf) files from iPhone contacts export
-                  </p>
-                </div>
-              </label>
-            </div>
-
-            {importContactsMutation.isPending && (
-              <div className="flex items-center justify-center py-4">
-                <div className="w-6 h-6 border-4 border-green-500 border-t-transparent rounded-full animate-spin mr-3"></div>
-                <span className="text-slate-600">Importing contacts...</span>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target as HTMLFormElement);
+            const customer = {
+              firstName: formData.get("firstName") as string,
+              lastName: formData.get("lastName") as string,
+              email: formData.get("email") as string || undefined,
+              phone: formData.get("phone") as string || undefined,
+              address: formData.get("address") as string || undefined,
+              leadSource: "Manual Entry",
+              priority: "warm",
+              status: "new_lead"
+            };
+            createCustomerMutation.mutate(customer);
+          }} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="quick-firstName">First Name *</Label>
+                <Input id="quick-firstName" name="firstName" required className="h-12 text-lg" placeholder="John" />
               </div>
-            )}
-
-            <div className="bg-green-50 p-4 rounded-lg">
-              <h4 className="font-medium text-slate-900 mb-2">How to export iPhone contacts:</h4>
-              <div className="text-sm text-slate-600 space-y-2">
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold text-green-600 mt-0.5">1.</span>
-                  <span>Open Settings → Mail → Accounts → iCloud</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold text-green-600 mt-0.5">2.</span>
-                  <span>Make sure Contacts is enabled</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold text-green-600 mt-0.5">3.</span>
-                  <span>Go to iCloud.com on your computer</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold text-green-600 mt-0.5">4.</span>
-                  <span>Open Contacts, select all contacts</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="font-semibold text-green-600 mt-0.5">5.</span>
-                  <span>Click the gear icon and select "Export vCard"</span>
-                </div>
-              </div>
-              <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-                <strong>Note:</strong> Only contacts with names will be imported as leads. The system will automatically extract phone numbers and email addresses.
+              <div>
+                <Label htmlFor="quick-lastName">Last Name *</Label>
+                <Input id="quick-lastName" name="lastName" required className="h-12 text-lg" placeholder="Doe" />
               </div>
             </div>
-          </div>
+
+            <div>
+              <Label htmlFor="quick-email">Email</Label>
+              <Input id="quick-email" name="email" type="email" className="h-12 text-lg" placeholder="john@example.com" />
+            </div>
+
+            <div>
+              <Label htmlFor="quick-phone">Phone</Label>
+              <Input id="quick-phone" name="phone" type="tel" className="h-12 text-lg" placeholder="(555) 123-4567" />
+            </div>
+
+            <div>
+              <Label htmlFor="quick-address">Address</Label>
+              <Input id="quick-address" name="address" className="h-12 text-lg" placeholder="123 Main St" />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => setIsContactsDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createCustomerMutation.isPending} className="bg-green-600 hover:bg-green-700">
+                {createCustomerMutation.isPending ? "Adding..." : "Add Contact"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
