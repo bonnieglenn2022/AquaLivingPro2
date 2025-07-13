@@ -19,6 +19,7 @@ import {
   costCategories,
   costItems,
   costHistory,
+  costItemTiers,
   type User,
   type UpsertUser,
   type Company,
@@ -57,6 +58,8 @@ import {
   type InsertCostItem,
   type CostHistory,
   type InsertCostHistory,
+  type CostItemTier,
+  type InsertCostItemTier,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, like, count } from "drizzle-orm";
@@ -836,6 +839,58 @@ export class DatabaseStorage implements IStorage {
       .values(history)
       .returning();
     return newHistory;
+  }
+
+  // Cost Item Tier operations
+  async getCostItemTiers(costItemId: number): Promise<CostItemTier[]> {
+    return await db
+      .select()
+      .from(costItemTiers)
+      .where(eq(costItemTiers.costItemId, costItemId))
+      .orderBy(costItemTiers.sortOrder, costItemTiers.minValue);
+  }
+
+  async createCostItemTier(tier: InsertCostItemTier): Promise<CostItemTier> {
+    const [newTier] = await db
+      .insert(costItemTiers)
+      .values(tier)
+      .returning();
+    return newTier;
+  }
+
+  async updateCostItemTier(id: number, updates: Partial<InsertCostItemTier>): Promise<CostItemTier> {
+    const [updatedTier] = await db
+      .update(costItemTiers)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(costItemTiers.id, id))
+      .returning();
+    return updatedTier;
+  }
+
+  async deleteCostItemTier(id: number): Promise<void> {
+    await db
+      .delete(costItemTiers)
+      .where(eq(costItemTiers.id, id));
+  }
+
+  async createCostItemWithTiers(item: InsertCostItem, tiers: InsertCostItemTier[]): Promise<CostItem> {
+    // Create the cost item with tiered pricing enabled
+    const [newItem] = await db
+      .insert(costItems)
+      .values({ ...item, hasTieredPricing: true })
+      .returning();
+
+    // Create the tiers
+    if (tiers.length > 0) {
+      const tiersToInsert = tiers.map((tier, index) => ({
+        ...tier,
+        costItemId: newItem.id,
+        sortOrder: index,
+      }));
+      await db.insert(costItemTiers).values(tiersToInsert);
+    }
+
+    return newItem;
   }
 }
 

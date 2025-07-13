@@ -311,12 +311,25 @@ export const costItems = pgTable("cost_items", {
   name: varchar("name", { length: 200 }).notNull(),
   description: text("description"),
   unitType: varchar("unit_type", { length: 50 }).notNull(), // sq_ft, linear_ft, cubic_yard, each, hour, etc.
-  costPerUnit: decimal("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
+  costPerUnit: decimal("cost_per_unit", { precision: 10, scale: 2 }),
+  hasTieredPricing: boolean("has_tiered_pricing").default(false),
   supplierName: varchar("supplier_name", { length: 100 }),
   supplierContact: varchar("supplier_contact", { length: 100 }),
   notes: text("notes"),
   lastUpdated: timestamp("last_updated").defaultNow(),
   isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const costItemTiers = pgTable("cost_item_tiers", {
+  id: serial("id").primaryKey(),
+  costItemId: integer("cost_item_id").notNull().references(() => costItems.id),
+  tierName: varchar("tier_name", { length: 100 }).notNull(), // "0-400 SF", "401-500 SF", etc.
+  minValue: decimal("min_value", { precision: 10, scale: 2 }),
+  maxValue: decimal("max_value", { precision: 10, scale: 2 }),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -449,6 +462,14 @@ export const costItemsRelations = relations(costItems, ({ one, many }) => ({
     references: [costCategories.id],
   }),
   history: many(costHistory),
+  tiers: many(costItemTiers),
+}));
+
+export const costItemTiersRelations = relations(costItemTiers, ({ one }) => ({
+  costItem: one(costItems, {
+    fields: [costItemTiers.costItemId],
+    references: [costItems.id],
+  }),
 }));
 
 export const costHistoryRelations = relations(costHistory, ({ one }) => ({
@@ -557,6 +578,12 @@ export const insertCostHistorySchema = createInsertSchema(costHistory).omit({
   changedAt: true,
 });
 
+export const insertCostItemTierSchema = createInsertSchema(costItemTiers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -599,3 +626,5 @@ export type CostItem = typeof costItems.$inferSelect;
 export type InsertCostItem = z.infer<typeof insertCostItemSchema>;
 export type CostHistory = typeof costHistory.$inferSelect;
 export type InsertCostHistory = z.infer<typeof insertCostHistorySchema>;
+export type CostItemTier = typeof costItemTiers.$inferSelect;
+export type InsertCostItemTier = z.infer<typeof insertCostItemTierSchema>;

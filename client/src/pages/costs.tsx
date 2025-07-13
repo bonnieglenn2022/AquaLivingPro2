@@ -12,10 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, DollarSign, Pencil, Trash2, History, Building2, Package } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, DollarSign, Pencil, Trash2, History, Building2, Package, Layers } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import type { CostCategory, CostItem, InsertCostCategory, InsertCostItem } from "@shared/schema";
+import type { CostCategory, CostItem, InsertCostCategory, InsertCostItem, CostItemTier, InsertCostItemTier } from "@shared/schema";
 
 const DEFAULT_CATEGORIES = [
   { name: "Excavation", description: "Site preparation and excavation costs" },
@@ -48,6 +49,8 @@ export default function Costs() {
   const [isEditingItem, setIsEditingItem] = useState(false);
   const [selectedItem, setSelectedItem] = useState<CostItem | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [useTieredPricing, setUseTieredPricing] = useState(false);
+  const [tierList, setTierList] = useState<Partial<InsertCostItemTier>[]>([]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["/api/cost-categories"],
@@ -93,14 +96,20 @@ export default function Costs() {
   });
 
   const createItemMutation = useMutation({
-    mutationFn: async (data: InsertCostItem) => {
-      return await apiRequest("POST", "/api/cost-items", data);
+    mutationFn: async (data: { item: InsertCostItem; tiers?: Partial<InsertCostItemTier>[] }) => {
+      if (data.tiers && data.tiers.length > 0) {
+        return await apiRequest("POST", "/api/cost-items/with-tiers", data);
+      } else {
+        return await apiRequest("POST", "/api/cost-items", data.item);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cost-items"] });
       setIsItemDialogOpen(false);
       setSelectedItem(null);
       setIsEditingItem(false);
+      setUseTieredPricing(false);
+      setTierList([]);
       toast({
         title: "Cost Item Created",
         description: "Cost item has been created successfully.",
@@ -177,13 +186,32 @@ export default function Costs() {
       name: formData.get("name") as string,
       description: formData.get("description") as string || null,
       unitType: formData.get("unitType") as string,
-      costPerUnit: formData.get("costPerUnit") as string,
+      costPerUnit: useTieredPricing ? null : (formData.get("costPerUnit") as string),
       supplierName: formData.get("supplierName") as string || null,
       supplierContact: formData.get("supplierContact") as string || null,
       notes: formData.get("notes") as string || null,
     };
 
-    createItemMutation.mutate(itemData);
+    const submitData = {
+      item: itemData,
+      tiers: useTieredPricing ? tierList.filter(tier => tier.tierName && tier.price) : undefined
+    };
+
+    createItemMutation.mutate(submitData);
+  };
+
+  const addTier = () => {
+    setTierList([...tierList, { tierName: "", minValue: 0, maxValue: 0, price: 0, sortOrder: tierList.length }]);
+  };
+
+  const updateTier = (index: number, field: keyof InsertCostItemTier, value: string | number) => {
+    const updatedTiers = [...tierList];
+    updatedTiers[index] = { ...updatedTiers[index], [field]: value };
+    setTierList(updatedTiers);
+  };
+
+  const removeTier = (index: number) => {
+    setTierList(tierList.filter((_, i) => i !== index));
   };
 
   const initializeDefaultCategories = async () => {
@@ -324,7 +352,16 @@ export default function Costs() {
                         <Package className="h-5 w-5" />
                         {selectedCategory.name} Cost Items
                       </CardTitle>
-                      <Dialog open={isItemDialogOpen} onOpenChange={setIsItemDialogOpen}>
+                      <Dialog 
+                        open={isItemDialogOpen} 
+                        onOpenChange={(open) => {
+                          setIsItemDialogOpen(open);
+                          if (!open) {
+                            setUseTieredPricing(false);
+                            setTierList([]);
+                          }
+                        }}
+                      >
                         <DialogTrigger asChild>
                           <Button size="sm">
                             <Plus className="h-4 w-4 mr-2" />
@@ -358,23 +395,123 @@ export default function Costs() {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor="costPerUnit">Cost Per Unit ($)</Label>
-                                <Input 
-                                  id="costPerUnit" 
-                                  name="costPerUnit" 
-                                  type="number" 
-                                  step="0.01" 
-                                  placeholder="0.00" 
-                                  required 
+                            {/* Pricing Type Toggle */}
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-2">
+                                <Checkbox 
+                                  id="useTieredPricing" 
+                                  checked={useTieredPricing}
+                                  onCheckedChange={(checked) => {
+                                    setUseTieredPricing(!!checked);
+                                    if (checked && tierList.length === 0) {
+                                      setTierList([{ tierName: "", minValue: 0, maxValue: 0, price: 0, sortOrder: 0 }]);
+                                    }
+                                  }}
                                 />
+                                <Label htmlFor="useTieredPricing" className="flex items-center gap-2 cursor-pointer">
+                                  <Layers className="h-4 w-4" />
+                                  Use Tiered Pricing (based on quantity/size ranges)
+                                </Label>
                               </div>
+
+                              {useTieredPricing ? (
+                                <div className="space-y-3 border rounded-lg p-4 bg-slate-50">
+                                  <div className="flex items-center justify-between">
+                                    <Label className="text-sm font-medium">Price Tiers</Label>
+                                    <Button 
+                                      type="button" 
+                                      size="sm" 
+                                      variant="outline" 
+                                      onClick={addTier}
+                                    >
+                                      <Plus className="h-4 w-4 mr-1" />
+                                      Add Tier
+                                    </Button>
+                                  </div>
+                                  
+                                  {tierList.map((tier, index) => (
+                                    <div key={index} className="grid grid-cols-12 gap-2 items-end">
+                                      <div className="col-span-3">
+                                        <Label className="text-xs">Tier Name</Label>
+                                        <Input
+                                          placeholder="e.g., Small Jobs"
+                                          value={tier.tierName || ""}
+                                          onChange={(e) => updateTier(index, "tierName", e.target.value)}
+                                          size="sm"
+                                        />
+                                      </div>
+                                      <div className="col-span-2">
+                                        <Label className="text-xs">Min</Label>
+                                        <Input
+                                          type="number"
+                                          placeholder="0"
+                                          value={tier.minValue || ""}
+                                          onChange={(e) => updateTier(index, "minValue", parseFloat(e.target.value) || 0)}
+                                          size="sm"
+                                        />
+                                      </div>
+                                      <div className="col-span-2">
+                                        <Label className="text-xs">Max</Label>
+                                        <Input
+                                          type="number"
+                                          placeholder="100"
+                                          value={tier.maxValue || ""}
+                                          onChange={(e) => updateTier(index, "maxValue", parseFloat(e.target.value) || 0)}
+                                          size="sm"
+                                        />
+                                      </div>
+                                      <div className="col-span-3">
+                                        <Label className="text-xs">Price ($)</Label>
+                                        <Input
+                                          type="number"
+                                          step="0.01"
+                                          placeholder="0.00"
+                                          value={tier.price || ""}
+                                          onChange={(e) => updateTier(index, "price", parseFloat(e.target.value) || 0)}
+                                          size="sm"
+                                        />
+                                      </div>
+                                      <div className="col-span-2">
+                                        <Button
+                                          type="button"
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => removeTier(index)}
+                                          className="w-full"
+                                        >
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor="costPerUnit">Cost Per Unit ($)</Label>
+                                    <Input 
+                                      id="costPerUnit" 
+                                      name="costPerUnit" 
+                                      type="number" 
+                                      step="0.01" 
+                                      placeholder="0.00" 
+                                      required={!useTieredPricing}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="supplierName">Supplier Name</Label>
+                                    <Input id="supplierName" name="supplierName" placeholder="e.g., ABC Materials" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {useTieredPricing && (
                               <div>
                                 <Label htmlFor="supplierName">Supplier Name</Label>
                                 <Input id="supplierName" name="supplierName" placeholder="e.g., ABC Materials" />
                               </div>
-                            </div>
+                            )}
 
                             <div>
                               <Label htmlFor="supplierContact">Supplier Contact</Label>
@@ -427,8 +564,18 @@ export default function Costs() {
                                 <div className="flex items-center gap-4 text-sm text-slate-600 mb-2">
                                   <div className="flex items-center gap-1">
                                     <DollarSign className="h-4 w-4" />
-                                    <span className="font-medium">${item.costPerUnit}</span>
-                                    <span>per {UNIT_TYPES.find(u => u.value === item.unitType)?.label.toLowerCase() || item.unitType}</span>
+                                    {item.hasTieredPricing ? (
+                                      <div className="flex items-center gap-2">
+                                        <Layers className="h-4 w-4" />
+                                        <span className="font-medium">Tiered Pricing</span>
+                                        <span>per {UNIT_TYPES.find(u => u.value === item.unitType)?.label.toLowerCase() || item.unitType}</span>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <span className="font-medium">${item.costPerUnit}</span>
+                                        <span>per {UNIT_TYPES.find(u => u.value === item.unitType)?.label.toLowerCase() || item.unitType}</span>
+                                      </>
+                                    )}
                                   </div>
                                   {item.lastUpdated && (
                                     <span className="text-xs">

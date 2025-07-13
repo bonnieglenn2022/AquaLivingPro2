@@ -1058,6 +1058,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cost Item Tier routes
+  app.get('/api/cost-items/:id/tiers', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const tiers = await storage.getCostItemTiers(id);
+      res.json(tiers);
+    } catch (error) {
+      console.error("Error fetching cost item tiers:", error);
+      res.status(500).json({ message: "Failed to fetch cost item tiers" });
+    }
+  });
+
+  app.post('/api/cost-items/with-tiers', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+      
+      const { item, tiers } = req.body;
+      const itemData = { ...item, companyId: company.id };
+      const newItem = await storage.createCostItemWithTiers(itemData, tiers);
+      res.status(201).json(newItem);
+    } catch (error) {
+      console.error("Error creating cost item with tiers:", error);
+      res.status(500).json({ message: "Failed to create cost item with tiers" });
+    }
+  });
+
+  app.post('/api/cost-item-tiers', isAuthenticated, async (req, res) => {
+    try {
+      const tierData = req.body;
+      const tier = await storage.createCostItemTier(tierData);
+      res.status(201).json(tier);
+    } catch (error) {
+      console.error("Error creating cost item tier:", error);
+      res.status(500).json({ message: "Failed to create cost item tier" });
+    }
+  });
+
+  app.put('/api/cost-item-tiers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const tier = await storage.updateCostItemTier(id, updates);
+      res.json(tier);
+    } catch (error) {
+      console.error("Error updating cost item tier:", error);
+      res.status(500).json({ message: "Failed to update cost item tier" });
+    }
+  });
+
+  app.delete('/api/cost-item-tiers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCostItemTier(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting cost item tier:", error);
+      res.status(500).json({ message: "Failed to delete cost item tier" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
