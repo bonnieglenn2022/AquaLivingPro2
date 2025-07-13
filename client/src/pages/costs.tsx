@@ -548,8 +548,14 @@ export default function Costs() {
                                     />
                                   </div>
                                   <div>
-                                    <Label htmlFor="supplierName">Supplier Name</Label>
-                                    <Input id="supplierName" name="supplierName" placeholder="e.g., ABC Materials" />
+                                    <Label htmlFor="supplierName">
+                                      {selectedCategory?.name === "Excavation" ? "Subcontractor Name" : "Supplier Name"}
+                                    </Label>
+                                    <Input 
+                                      id="supplierName" 
+                                      name="supplierName" 
+                                      placeholder={selectedCategory?.name === "Excavation" ? "e.g., Smith Excavation" : "e.g., ABC Materials"} 
+                                    />
                                   </div>
                                 </div>
                               )}
@@ -557,14 +563,26 @@ export default function Costs() {
 
                             {useTieredPricing && (
                               <div>
-                                <Label htmlFor="supplierName">Supplier Name</Label>
-                                <Input id="supplierName" name="supplierName" placeholder="e.g., ABC Materials" />
+                                <Label htmlFor="supplierName">
+                                  {selectedCategory?.name === "Excavation" ? "Subcontractor Name" : "Supplier Name"}
+                                </Label>
+                                <Input 
+                                  id="supplierName" 
+                                  name="supplierName" 
+                                  placeholder={selectedCategory?.name === "Excavation" ? "e.g., Smith Excavation" : "e.g., ABC Materials"} 
+                                />
                               </div>
                             )}
 
                             <div>
-                              <Label htmlFor="supplierContact">Supplier Contact</Label>
-                              <Input id="supplierContact" name="supplierContact" placeholder="Phone, email, or website" />
+                              <Label htmlFor="supplierContact">
+                                {selectedCategory?.name === "Excavation" ? "Subcontractor Contact" : "Supplier Contact"}
+                              </Label>
+                              <Input 
+                                id="supplierContact" 
+                                name="supplierContact" 
+                                placeholder="Phone, email, or website" 
+                              />
                             </div>
 
                             <div>
@@ -639,7 +657,9 @@ export default function Costs() {
 
                                 {item.supplierName && (
                                   <div className="text-sm text-slate-600">
-                                    <span className="font-medium">Supplier:</span> {item.supplierName}
+                                    <span className="font-medium">
+                                      {selectedCategory?.name === "Excavation" ? "Subcontractor:" : "Supplier:"}
+                                    </span> {item.supplierName}
                                     {item.supplierContact && (
                                       <span className="ml-2">({item.supplierContact})</span>
                                     )}
@@ -711,12 +731,14 @@ export default function Costs() {
                                           </Select>
                                         </div>
                                         <div>
-                                          <Label htmlFor="editSupplierName">Supplier Name</Label>
+                                          <Label htmlFor="editSupplierName">
+                                            {selectedCategory?.name === "Excavation" ? "Subcontractor Name" : "Supplier Name"}
+                                          </Label>
                                           <Input 
                                             id="editSupplierName" 
                                             name="supplierName" 
                                             defaultValue={item.supplierName || ""}
-                                            placeholder="e.g., ABC Materials" 
+                                            placeholder={selectedCategory?.name === "Excavation" ? "e.g., Smith Excavation" : "e.g., ABC Materials"} 
                                           />
                                         </div>
                                       </div>
@@ -737,7 +759,9 @@ export default function Costs() {
                                       )}
 
                                       <div>
-                                        <Label htmlFor="editSupplierContact">Supplier Contact</Label>
+                                        <Label htmlFor="editSupplierContact">
+                                          {selectedCategory?.name === "Excavation" ? "Subcontractor Contact" : "Supplier Contact"}
+                                        </Label>
                                         <Input 
                                           id="editSupplierContact" 
                                           name="supplierContact" 
