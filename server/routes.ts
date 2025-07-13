@@ -941,9 +941,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Cost Management routes
-  app.get('/api/cost-categories', isAuthenticated, async (req, res) => {
+  app.get('/api/cost-categories', isAuthenticated, async (req: any, res) => {
     try {
-      const categories = await storage.getCostCategories();
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      const categories = await storage.getCostCategories(company?.id);
       res.json(categories);
     } catch (error) {
       console.error("Error fetching cost categories:", error);
@@ -951,9 +953,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/cost-categories', isAuthenticated, async (req, res) => {
+  app.post('/api/cost-categories', isAuthenticated, async (req: any, res) => {
     try {
-      const categoryData = req.body;
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+      const categoryData = { ...req.body, companyId: company.id };
       const category = await storage.createCostCategory(categoryData);
       res.status(201).json(category);
     } catch (error) {
@@ -985,12 +992,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/cost-items', isAuthenticated, async (req, res) => {
+  app.get('/api/cost-items', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
       const { categoryId } = req.query;
-      const items = categoryId 
-        ? await storage.getCostItems(parseInt(categoryId as string))
-        : await storage.getCostItems();
+      const items = await storage.getCostItems(
+        company?.id, 
+        categoryId ? parseInt(categoryId as string) : undefined
+      );
       res.json(items);
     } catch (error) {
       console.error("Error fetching cost items:", error);
@@ -998,9 +1008,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/cost-items', isAuthenticated, async (req, res) => {
+  app.post('/api/cost-items', isAuthenticated, async (req: any, res) => {
     try {
-      const itemData = req.body;
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+      const itemData = { ...req.body, companyId: company.id };
       const item = await storage.createCostItem(itemData);
       res.status(201).json(item);
     } catch (error) {

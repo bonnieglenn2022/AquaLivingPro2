@@ -713,12 +713,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Cost Management operations
-  async getCostCategories(): Promise<CostCategory[]> {
-    return await db
+  async getCostCategories(companyId?: number): Promise<CostCategory[]> {
+    const query = db
       .select()
       .from(costCategories)
-      .where(eq(costCategories.isActive, true))
-      .orderBy(costCategories.sortOrder, costCategories.name);
+      .where(eq(costCategories.isActive, true));
+
+    if (companyId) {
+      query.where(and(eq(costCategories.isActive, true), eq(costCategories.companyId, companyId)));
+    }
+
+    return await query.orderBy(costCategories.sortOrder, costCategories.name);
   }
 
   async getCostCategory(id: number): Promise<CostCategory | undefined> {
@@ -753,17 +758,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(costCategories.id, id));
   }
 
-  async getCostItems(categoryId?: number): Promise<CostItem[]> {
-    const query = db
-      .select()
-      .from(costItems)
-      .where(eq(costItems.isActive, true));
+  async getCostItems(companyId?: number, categoryId?: number): Promise<CostItem[]> {
+    let whereConditions = [eq(costItems.isActive, true)];
 
-    if (categoryId) {
-      query.where(and(eq(costItems.isActive, true), eq(costItems.categoryId, categoryId)));
+    if (companyId) {
+      whereConditions.push(eq(costItems.companyId, companyId));
     }
 
-    return await query.orderBy(costItems.name);
+    if (categoryId) {
+      whereConditions.push(eq(costItems.categoryId, categoryId));
+    }
+
+    return await db
+      .select()
+      .from(costItems)
+      .where(and(...whereConditions))
+      .orderBy(costItems.name);
   }
 
   async getCostItem(id: number): Promise<CostItem | undefined> {
