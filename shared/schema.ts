@@ -344,6 +344,209 @@ export const costHistory = pgTable("cost_history", {
   changedAt: timestamp("changed_at").defaultNow(),
 });
 
+// Project Budgets table
+export const projectBudgets = pgTable("project_budgets", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull().default("Project Budget"),
+  totalBudget: decimal("total_budget", { precision: 12, scale: 2 }).notNull().default("0"),
+  totalCommitted: decimal("total_committed", { precision: 12, scale: 2 }).notNull().default("0"),
+  totalSpent: decimal("total_spent", { precision: 12, scale: 2 }).notNull().default("0"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Budget Items table (line items within a project budget)
+export const budgetItems = pgTable("budget_items", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  budgetId: integer("budget_id").notNull().references(() => projectBudgets.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id").references(() => costCategories.id),
+  costItemId: integer("cost_item_id").references(() => costItems.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  unitType: varchar("unit_type", { length: 50 }).notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull().default("0"),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }).notNull().default("0"),
+  totalBudget: decimal("total_budget", { precision: 12, scale: 2 }).notNull().default("0"),
+  totalCommitted: decimal("total_committed", { precision: 12, scale: 2 }).notNull().default("0"),
+  totalSpent: decimal("total_spent", { precision: 12, scale: 2 }).notNull().default("0"),
+  markup: decimal("markup", { precision: 5, scale: 2 }).default("0"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Purchase Orders table
+export const purchaseOrders = pgTable("purchase_orders", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  vendorId: integer("vendor_id").notNull().references(() => vendors.id),
+  poNumber: varchar("po_number", { length: 100 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 50 }).notNull().default("draft"),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).default("0"),
+  grandTotal: decimal("grand_total", { precision: 12, scale: 2 }).notNull().default("0"),
+  expectedDelivery: timestamp("expected_delivery"),
+  notes: text("notes"),
+  sentAt: timestamp("sent_at"),
+  acceptedAt: timestamp("accepted_at"),
+  deliveredAt: timestamp("delivered_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Purchase Order Items table
+export const purchaseOrderItems = pgTable("purchase_order_items", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  purchaseOrderId: integer("purchase_order_id").notNull().references(() => purchaseOrders.id, { onDelete: "cascade" }),
+  budgetItemId: integer("budget_item_id").references(() => budgetItems.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  unitType: varchar("unit_type", { length: 50 }).notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal("total_cost", { precision: 12, scale: 2 }).notNull(),
+  sortOrder: integer("sort_order").default(0),
+});
+
+// Work Orders table (similar to purchase orders but for services/labor)
+export const workOrders = pgTable("work_orders", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  vendorId: integer("vendor_id").notNull().references(() => vendors.id),
+  woNumber: varchar("wo_number", { length: 100 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 50 }).notNull().default("draft"),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).default("0"),
+  grandTotal: decimal("grand_total", { precision: 12, scale: 2 }).notNull().default("0"),
+  startDate: timestamp("start_date"),
+  expectedCompletion: timestamp("expected_completion"),
+  notes: text("notes"),
+  sentAt: timestamp("sent_at"),
+  acceptedAt: timestamp("accepted_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Work Order Items table
+export const workOrderItems = pgTable("work_order_items", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  workOrderId: integer("work_order_id").notNull().references(() => workOrders.id, { onDelete: "cascade" }),
+  budgetItemId: integer("budget_item_id").references(() => budgetItems.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  unitType: varchar("unit_type", { length: 50 }).notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal("total_cost", { precision: 12, scale: 2 }).notNull(),
+  sortOrder: integer("sort_order").default(0),
+});
+
+// Vendor Bills table (bills received from vendors for POs and WOs)
+export const vendorBills = pgTable("vendor_bills", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  vendorId: integer("vendor_id").notNull().references(() => vendors.id),
+  purchaseOrderId: integer("purchase_order_id").references(() => purchaseOrders.id),
+  workOrderId: integer("work_order_id").references(() => workOrders.id),
+  billNumber: varchar("bill_number", { length: 100 }).notNull(),
+  vendorBillNumber: varchar("vendor_bill_number", { length: 100 }),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 50 }).notNull().default("pending"),
+  billAmount: decimal("bill_amount", { precision: 12, scale: 2 }).notNull(),
+  taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).default("0"),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(),
+  billDate: timestamp("bill_date").notNull(),
+  dueDate: timestamp("due_date"),
+  paidDate: timestamp("paid_date"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Vendor Bill Items table
+export const vendorBillItems = pgTable("vendor_bill_items", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  vendorBillId: integer("vendor_bill_id").notNull().references(() => vendorBills.id, { onDelete: "cascade" }),
+  budgetItemId: integer("budget_item_id").references(() => budgetItems.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  unitType: varchar("unit_type", { length: 50 }),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }).notNull(),
+  totalCost: decimal("total_cost", { precision: 12, scale: 2 }).notNull(),
+  sortOrder: integer("sort_order").default(0),
+});
+
+// Customer Invoices table
+export const customerInvoices = pgTable("customer_invoices", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  customerId: integer("customer_id").notNull().references(() => customers.id),
+  invoiceNumber: varchar("invoice_number", { length: 100 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  status: varchar("status", { length: 50 }).notNull().default("draft"),
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull().default("0"),
+  taxRate: decimal("tax_rate", { precision: 5, scale: 4 }).default("0"),
+  taxAmount: decimal("tax_amount", { precision: 12, scale: 2 }).default("0"),
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull().default("0"),
+  paidAmount: decimal("paid_amount", { precision: 12, scale: 2 }).default("0"),
+  balanceDue: decimal("balance_due", { precision: 12, scale: 2 }).notNull().default("0"),
+  invoiceDate: timestamp("invoice_date").notNull(),
+  dueDate: timestamp("due_date"),
+  paidDate: timestamp("paid_date"),
+  notes: text("notes"),
+  terms: text("terms"),
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Customer Invoice Items table
+export const customerInvoiceItems = pgTable("customer_invoice_items", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  invoiceId: integer("invoice_id").notNull().references(() => customerInvoices.id, { onDelete: "cascade" }),
+  budgetItemId: integer("budget_item_id").references(() => budgetItems.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  unitType: varchar("unit_type", { length: 50 }),
+  quantity: decimal("quantity", { precision: 10, scale: 2 }).notNull(),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  totalPrice: decimal("total_price", { precision: 12, scale: 2 }).notNull(),
+  sortOrder: integer("sort_order").default(0),
+});
+
+// Payment Records table (tracks payments received for invoices)
+export const paymentRecords = pgTable("payment_records", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  invoiceId: integer("invoice_id").notNull().references(() => customerInvoices.id, { onDelete: "cascade" }),
+  paymentMethod: varchar("payment_method", { length: 50 }).notNull(),
+  paymentAmount: decimal("payment_amount", { precision: 12, scale: 2 }).notNull(),
+  paymentDate: timestamp("payment_date").notNull(),
+  referenceNumber: varchar("reference_number", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const customersRelations = relations(customers, ({ many }) => ({
   projects: many(projects),
@@ -361,6 +564,11 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   changeOrders: many(changeOrders),
   activities: many(activities),
   todos: many(projectTodos),
+  budgets: many(projectBudgets),
+  purchaseOrders: many(purchaseOrders),
+  workOrders: many(workOrders),
+  vendorBills: many(vendorBills),
+  customerInvoices: many(customerInvoices),
 }));
 
 export const projectTodosRelations = relations(projectTodos, ({ one }) => ({
@@ -479,6 +687,144 @@ export const costHistoryRelations = relations(costHistory, ({ one }) => ({
   }),
 }));
 
+// Financial management relations
+export const projectBudgetsRelations = relations(projectBudgets, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [projectBudgets.projectId],
+    references: [projects.id],
+  }),
+  budgetItems: many(budgetItems),
+}));
+
+export const budgetItemsRelations = relations(budgetItems, ({ one, many }) => ({
+  budget: one(projectBudgets, {
+    fields: [budgetItems.budgetId],
+    references: [projectBudgets.id],
+  }),
+  category: one(costCategories, {
+    fields: [budgetItems.categoryId],
+    references: [costCategories.id],
+  }),
+  costItem: one(costItems, {
+    fields: [budgetItems.costItemId],
+    references: [costItems.id],
+  }),
+  purchaseOrderItems: many(purchaseOrderItems),
+  workOrderItems: many(workOrderItems),
+  vendorBillItems: many(vendorBillItems),
+  invoiceItems: many(customerInvoiceItems),
+}));
+
+export const purchaseOrdersRelations = relations(purchaseOrders, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [purchaseOrders.projectId],
+    references: [projects.id],
+  }),
+  vendor: one(vendors, {
+    fields: [purchaseOrders.vendorId],
+    references: [vendors.id],
+  }),
+  items: many(purchaseOrderItems),
+  vendorBills: many(vendorBills),
+}));
+
+export const purchaseOrderItemsRelations = relations(purchaseOrderItems, ({ one }) => ({
+  purchaseOrder: one(purchaseOrders, {
+    fields: [purchaseOrderItems.purchaseOrderId],
+    references: [purchaseOrders.id],
+  }),
+  budgetItem: one(budgetItems, {
+    fields: [purchaseOrderItems.budgetItemId],
+    references: [budgetItems.id],
+  }),
+}));
+
+export const workOrdersRelations = relations(workOrders, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [workOrders.projectId],
+    references: [projects.id],
+  }),
+  vendor: one(vendors, {
+    fields: [workOrders.vendorId],
+    references: [vendors.id],
+  }),
+  items: many(workOrderItems),
+  vendorBills: many(vendorBills),
+}));
+
+export const workOrderItemsRelations = relations(workOrderItems, ({ one }) => ({
+  workOrder: one(workOrders, {
+    fields: [workOrderItems.workOrderId],
+    references: [workOrders.id],
+  }),
+  budgetItem: one(budgetItems, {
+    fields: [workOrderItems.budgetItemId],
+    references: [budgetItems.id],
+  }),
+}));
+
+export const vendorBillsRelations = relations(vendorBills, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [vendorBills.projectId],
+    references: [projects.id],
+  }),
+  vendor: one(vendors, {
+    fields: [vendorBills.vendorId],
+    references: [vendors.id],
+  }),
+  purchaseOrder: one(purchaseOrders, {
+    fields: [vendorBills.purchaseOrderId],
+    references: [purchaseOrders.id],
+  }),
+  workOrder: one(workOrders, {
+    fields: [vendorBills.workOrderId],
+    references: [workOrders.id],
+  }),
+  items: many(vendorBillItems),
+}));
+
+export const vendorBillItemsRelations = relations(vendorBillItems, ({ one }) => ({
+  vendorBill: one(vendorBills, {
+    fields: [vendorBillItems.vendorBillId],
+    references: [vendorBills.id],
+  }),
+  budgetItem: one(budgetItems, {
+    fields: [vendorBillItems.budgetItemId],
+    references: [budgetItems.id],
+  }),
+}));
+
+export const customerInvoicesRelations = relations(customerInvoices, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [customerInvoices.projectId],
+    references: [projects.id],
+  }),
+  customer: one(customers, {
+    fields: [customerInvoices.customerId],
+    references: [customers.id],
+  }),
+  items: many(customerInvoiceItems),
+  payments: many(paymentRecords),
+}));
+
+export const customerInvoiceItemsRelations = relations(customerInvoiceItems, ({ one }) => ({
+  invoice: one(customerInvoices, {
+    fields: [customerInvoiceItems.invoiceId],
+    references: [customerInvoices.id],
+  }),
+  budgetItem: one(budgetItems, {
+    fields: [customerInvoiceItems.budgetItemId],
+    references: [budgetItems.id],
+  }),
+}));
+
+export const paymentRecordsRelations = relations(paymentRecords, ({ one }) => ({
+  invoice: one(customerInvoices, {
+    fields: [paymentRecords.invoiceId],
+    references: [customerInvoices.id],
+  }),
+}));
+
 // Insert schemas
 export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true,
@@ -584,6 +930,64 @@ export const insertCostItemTierSchema = createInsertSchema(costItemTiers).omit({
   updatedAt: true,
 });
 
+// Financial management insert schemas
+export const insertProjectBudgetSchema = createInsertSchema(projectBudgets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertBudgetItemSchema = createInsertSchema(budgetItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems).omit({
+  id: true,
+});
+
+export const insertWorkOrderSchema = createInsertSchema(workOrders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWorkOrderItemSchema = createInsertSchema(workOrderItems).omit({
+  id: true,
+});
+
+export const insertVendorBillSchema = createInsertSchema(vendorBills).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertVendorBillItemSchema = createInsertSchema(vendorBillItems).omit({
+  id: true,
+});
+
+export const insertCustomerInvoiceSchema = createInsertSchema(customerInvoices).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCustomerInvoiceItemSchema = createInsertSchema(customerInvoiceItems).omit({
+  id: true,
+});
+
+export const insertPaymentRecordSchema = createInsertSchema(paymentRecords).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -628,3 +1032,27 @@ export type CostHistory = typeof costHistory.$inferSelect;
 export type InsertCostHistory = z.infer<typeof insertCostHistorySchema>;
 export type CostItemTier = typeof costItemTiers.$inferSelect;
 export type InsertCostItemTier = z.infer<typeof insertCostItemTierSchema>;
+
+// Financial management types
+export type ProjectBudget = typeof projectBudgets.$inferSelect;
+export type InsertProjectBudget = z.infer<typeof insertProjectBudgetSchema>;
+export type BudgetItem = typeof budgetItems.$inferSelect;
+export type InsertBudgetItem = z.infer<typeof insertBudgetItemSchema>;
+export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+export type InsertPurchaseOrder = z.infer<typeof insertPurchaseOrderSchema>;
+export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
+export type InsertPurchaseOrderItem = z.infer<typeof insertPurchaseOrderItemSchema>;
+export type WorkOrder = typeof workOrders.$inferSelect;
+export type InsertWorkOrder = z.infer<typeof insertWorkOrderSchema>;
+export type WorkOrderItem = typeof workOrderItems.$inferSelect;
+export type InsertWorkOrderItem = z.infer<typeof insertWorkOrderItemSchema>;
+export type VendorBill = typeof vendorBills.$inferSelect;
+export type InsertVendorBill = z.infer<typeof insertVendorBillSchema>;
+export type VendorBillItem = typeof vendorBillItems.$inferSelect;
+export type InsertVendorBillItem = z.infer<typeof insertVendorBillItemSchema>;
+export type CustomerInvoice = typeof customerInvoices.$inferSelect;
+export type InsertCustomerInvoice = z.infer<typeof insertCustomerInvoiceSchema>;
+export type CustomerInvoiceItem = typeof customerInvoiceItems.$inferSelect;
+export type InsertCustomerInvoiceItem = z.infer<typeof insertCustomerInvoiceItemSchema>;
+export type PaymentRecord = typeof paymentRecords.$inferSelect;
+export type InsertPaymentRecord = z.infer<typeof insertPaymentRecordSchema>;

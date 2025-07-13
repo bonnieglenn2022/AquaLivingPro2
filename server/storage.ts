@@ -20,6 +20,17 @@ import {
   costItems,
   costHistory,
   costItemTiers,
+  projectBudgets,
+  budgetItems,
+  purchaseOrders,
+  purchaseOrderItems,
+  workOrders,
+  workOrderItems,
+  vendorBills,
+  vendorBillItems,
+  customerInvoices,
+  customerInvoiceItems,
+  paymentRecords,
   type User,
   type UpsertUser,
   type Company,
@@ -60,6 +71,28 @@ import {
   type InsertCostHistory,
   type CostItemTier,
   type InsertCostItemTier,
+  type ProjectBudget,
+  type InsertProjectBudget,
+  type BudgetItem,
+  type InsertBudgetItem,
+  type PurchaseOrder,
+  type InsertPurchaseOrder,
+  type PurchaseOrderItem,
+  type InsertPurchaseOrderItem,
+  type WorkOrder,
+  type InsertWorkOrder,
+  type WorkOrderItem,
+  type InsertWorkOrderItem,
+  type VendorBill,
+  type InsertVendorBill,
+  type VendorBillItem,
+  type InsertVendorBillItem,
+  type CustomerInvoice,
+  type InsertCustomerInvoice,
+  type CustomerInvoiceItem,
+  type InsertCustomerInvoiceItem,
+  type PaymentRecord,
+  type InsertPaymentRecord,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, like, count } from "drizzle-orm";
@@ -186,6 +219,78 @@ export interface IStorage {
 
   getCostHistory(costItemId: number): Promise<CostHistory[]>;
   createCostHistory(history: InsertCostHistory): Promise<CostHistory>;
+
+  // Project Budget operations
+  getProjectBudgets(projectId: number): Promise<ProjectBudget[]>;
+  getProjectBudget(id: number): Promise<ProjectBudget | undefined>;
+  createProjectBudget(budget: InsertProjectBudget): Promise<ProjectBudget>;
+  updateProjectBudget(id: number, updates: Partial<InsertProjectBudget>): Promise<ProjectBudget>;
+  deleteProjectBudget(id: number): Promise<void>;
+
+  // Budget Item operations
+  getBudgetItems(budgetId: number): Promise<BudgetItem[]>;
+  getBudgetItem(id: number): Promise<BudgetItem | undefined>;
+  createBudgetItem(item: InsertBudgetItem): Promise<BudgetItem>;
+  updateBudgetItem(id: number, updates: Partial<InsertBudgetItem>): Promise<BudgetItem>;
+  deleteBudgetItem(id: number): Promise<void>;
+
+  // Purchase Order operations
+  getPurchaseOrders(projectId?: number): Promise<PurchaseOrder[]>;
+  getPurchaseOrder(id: number): Promise<PurchaseOrder | undefined>;
+  createPurchaseOrder(purchaseOrder: InsertPurchaseOrder): Promise<PurchaseOrder>;
+  updatePurchaseOrder(id: number, updates: Partial<InsertPurchaseOrder>): Promise<PurchaseOrder>;
+  deletePurchaseOrder(id: number): Promise<void>;
+
+  // Purchase Order Item operations
+  getPurchaseOrderItems(purchaseOrderId: number): Promise<PurchaseOrderItem[]>;
+  createPurchaseOrderItem(item: InsertPurchaseOrderItem): Promise<PurchaseOrderItem>;
+  updatePurchaseOrderItem(id: number, updates: Partial<InsertPurchaseOrderItem>): Promise<PurchaseOrderItem>;
+  deletePurchaseOrderItem(id: number): Promise<void>;
+
+  // Work Order operations
+  getWorkOrders(projectId?: number): Promise<WorkOrder[]>;
+  getWorkOrder(id: number): Promise<WorkOrder | undefined>;
+  createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder>;
+  updateWorkOrder(id: number, updates: Partial<InsertWorkOrder>): Promise<WorkOrder>;
+  deleteWorkOrder(id: number): Promise<void>;
+
+  // Work Order Item operations
+  getWorkOrderItems(workOrderId: number): Promise<WorkOrderItem[]>;
+  createWorkOrderItem(item: InsertWorkOrderItem): Promise<WorkOrderItem>;
+  updateWorkOrderItem(id: number, updates: Partial<InsertWorkOrderItem>): Promise<WorkOrderItem>;
+  deleteWorkOrderItem(id: number): Promise<void>;
+
+  // Vendor Bill operations
+  getVendorBills(projectId?: number): Promise<VendorBill[]>;
+  getVendorBill(id: number): Promise<VendorBill | undefined>;
+  createVendorBill(bill: InsertVendorBill): Promise<VendorBill>;
+  updateVendorBill(id: number, updates: Partial<InsertVendorBill>): Promise<VendorBill>;
+  deleteVendorBill(id: number): Promise<void>;
+
+  // Vendor Bill Item operations
+  getVendorBillItems(billId: number): Promise<VendorBillItem[]>;
+  createVendorBillItem(item: InsertVendorBillItem): Promise<VendorBillItem>;
+  updateVendorBillItem(id: number, updates: Partial<InsertVendorBillItem>): Promise<VendorBillItem>;
+  deleteVendorBillItem(id: number): Promise<void>;
+
+  // Customer Invoice operations
+  getCustomerInvoices(projectId?: number): Promise<CustomerInvoice[]>;
+  getCustomerInvoice(id: number): Promise<CustomerInvoice | undefined>;
+  createCustomerInvoice(invoice: InsertCustomerInvoice): Promise<CustomerInvoice>;
+  updateCustomerInvoice(id: number, updates: Partial<InsertCustomerInvoice>): Promise<CustomerInvoice>;
+  deleteCustomerInvoice(id: number): Promise<void>;
+
+  // Customer Invoice Item operations
+  getCustomerInvoiceItems(invoiceId: number): Promise<CustomerInvoiceItem[]>;
+  createCustomerInvoiceItem(item: InsertCustomerInvoiceItem): Promise<CustomerInvoiceItem>;
+  updateCustomerInvoiceItem(id: number, updates: Partial<InsertCustomerInvoiceItem>): Promise<CustomerInvoiceItem>;
+  deleteCustomerInvoiceItem(id: number): Promise<void>;
+
+  // Payment Record operations
+  getPaymentRecords(invoiceId: number): Promise<PaymentRecord[]>;
+  createPaymentRecord(payment: InsertPaymentRecord): Promise<PaymentRecord>;
+  updatePaymentRecord(id: number, updates: Partial<InsertPaymentRecord>): Promise<PaymentRecord>;
+  deletePaymentRecord(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -891,6 +996,422 @@ export class DatabaseStorage implements IStorage {
     }
 
     return newItem;
+  }
+
+  // Project Budget operations
+  async getProjectBudgets(projectId: number): Promise<ProjectBudget[]> {
+    return await db
+      .select()
+      .from(projectBudgets)
+      .where(eq(projectBudgets.projectId, projectId))
+      .orderBy(desc(projectBudgets.createdAt));
+  }
+
+  async getProjectBudget(id: number): Promise<ProjectBudget | undefined> {
+    const [budget] = await db
+      .select()
+      .from(projectBudgets)
+      .where(eq(projectBudgets.id, id));
+    return budget;
+  }
+
+  async createProjectBudget(budget: InsertProjectBudget): Promise<ProjectBudget> {
+    const [newBudget] = await db
+      .insert(projectBudgets)
+      .values(budget)
+      .returning();
+    return newBudget;
+  }
+
+  async updateProjectBudget(id: number, updates: Partial<InsertProjectBudget>): Promise<ProjectBudget> {
+    const [updatedBudget] = await db
+      .update(projectBudgets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(projectBudgets.id, id))
+      .returning();
+    return updatedBudget;
+  }
+
+  async deleteProjectBudget(id: number): Promise<void> {
+    await db
+      .delete(projectBudgets)
+      .where(eq(projectBudgets.id, id));
+  }
+
+  // Budget Item operations
+  async getBudgetItems(budgetId: number): Promise<BudgetItem[]> {
+    return await db
+      .select()
+      .from(budgetItems)
+      .where(eq(budgetItems.budgetId, budgetId))
+      .orderBy(budgetItems.sortOrder, budgetItems.name);
+  }
+
+  async getBudgetItem(id: number): Promise<BudgetItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(budgetItems)
+      .where(eq(budgetItems.id, id));
+    return item;
+  }
+
+  async createBudgetItem(item: InsertBudgetItem): Promise<BudgetItem> {
+    const [newItem] = await db
+      .insert(budgetItems)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async updateBudgetItem(id: number, updates: Partial<InsertBudgetItem>): Promise<BudgetItem> {
+    const [updatedItem] = await db
+      .update(budgetItems)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(budgetItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteBudgetItem(id: number): Promise<void> {
+    await db
+      .delete(budgetItems)
+      .where(eq(budgetItems.id, id));
+  }
+
+  // Purchase Order operations
+  async getPurchaseOrders(projectId?: number): Promise<PurchaseOrder[]> {
+    const query = db
+      .select()
+      .from(purchaseOrders);
+
+    if (projectId) {
+      query.where(eq(purchaseOrders.projectId, projectId));
+    }
+
+    return await query.orderBy(desc(purchaseOrders.createdAt));
+  }
+
+  async getPurchaseOrder(id: number): Promise<PurchaseOrder | undefined> {
+    const [order] = await db
+      .select()
+      .from(purchaseOrders)
+      .where(eq(purchaseOrders.id, id));
+    return order;
+  }
+
+  async createPurchaseOrder(purchaseOrder: InsertPurchaseOrder): Promise<PurchaseOrder> {
+    const [newOrder] = await db
+      .insert(purchaseOrders)
+      .values(purchaseOrder)
+      .returning();
+    return newOrder;
+  }
+
+  async updatePurchaseOrder(id: number, updates: Partial<InsertPurchaseOrder>): Promise<PurchaseOrder> {
+    const [updatedOrder] = await db
+      .update(purchaseOrders)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(purchaseOrders.id, id))
+      .returning();
+    return updatedOrder;
+  }
+
+  async deletePurchaseOrder(id: number): Promise<void> {
+    await db
+      .delete(purchaseOrders)
+      .where(eq(purchaseOrders.id, id));
+  }
+
+  // Purchase Order Item operations
+  async getPurchaseOrderItems(purchaseOrderId: number): Promise<PurchaseOrderItem[]> {
+    return await db
+      .select()
+      .from(purchaseOrderItems)
+      .where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId))
+      .orderBy(purchaseOrderItems.sortOrder, purchaseOrderItems.name);
+  }
+
+  async createPurchaseOrderItem(item: InsertPurchaseOrderItem): Promise<PurchaseOrderItem> {
+    const [newItem] = await db
+      .insert(purchaseOrderItems)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async updatePurchaseOrderItem(id: number, updates: Partial<InsertPurchaseOrderItem>): Promise<PurchaseOrderItem> {
+    const [updatedItem] = await db
+      .update(purchaseOrderItems)
+      .set(updates)
+      .where(eq(purchaseOrderItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deletePurchaseOrderItem(id: number): Promise<void> {
+    await db
+      .delete(purchaseOrderItems)
+      .where(eq(purchaseOrderItems.id, id));
+  }
+
+  // Work Order operations
+  async getWorkOrders(projectId?: number): Promise<WorkOrder[]> {
+    const query = db
+      .select()
+      .from(workOrders);
+
+    if (projectId) {
+      query.where(eq(workOrders.projectId, projectId));
+    }
+
+    return await query.orderBy(desc(workOrders.createdAt));
+  }
+
+  async getWorkOrder(id: number): Promise<WorkOrder | undefined> {
+    const [order] = await db
+      .select()
+      .from(workOrders)
+      .where(eq(workOrders.id, id));
+    return order;
+  }
+
+  async createWorkOrder(workOrder: InsertWorkOrder): Promise<WorkOrder> {
+    const [newOrder] = await db
+      .insert(workOrders)
+      .values(workOrder)
+      .returning();
+    return newOrder;
+  }
+
+  async updateWorkOrder(id: number, updates: Partial<InsertWorkOrder>): Promise<WorkOrder> {
+    const [updatedOrder] = await db
+      .update(workOrders)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(workOrders.id, id))
+      .returning();
+    return updatedOrder;
+  }
+
+  async deleteWorkOrder(id: number): Promise<void> {
+    await db
+      .delete(workOrders)
+      .where(eq(workOrders.id, id));
+  }
+
+  // Work Order Item operations
+  async getWorkOrderItems(workOrderId: number): Promise<WorkOrderItem[]> {
+    return await db
+      .select()
+      .from(workOrderItems)
+      .where(eq(workOrderItems.workOrderId, workOrderId))
+      .orderBy(workOrderItems.sortOrder, workOrderItems.name);
+  }
+
+  async createWorkOrderItem(item: InsertWorkOrderItem): Promise<WorkOrderItem> {
+    const [newItem] = await db
+      .insert(workOrderItems)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async updateWorkOrderItem(id: number, updates: Partial<InsertWorkOrderItem>): Promise<WorkOrderItem> {
+    const [updatedItem] = await db
+      .update(workOrderItems)
+      .set(updates)
+      .where(eq(workOrderItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteWorkOrderItem(id: number): Promise<void> {
+    await db
+      .delete(workOrderItems)
+      .where(eq(workOrderItems.id, id));
+  }
+
+  // Vendor Bill operations
+  async getVendorBills(projectId?: number): Promise<VendorBill[]> {
+    const query = db
+      .select()
+      .from(vendorBills);
+
+    if (projectId) {
+      query.where(eq(vendorBills.projectId, projectId));
+    }
+
+    return await query.orderBy(desc(vendorBills.createdAt));
+  }
+
+  async getVendorBill(id: number): Promise<VendorBill | undefined> {
+    const [bill] = await db
+      .select()
+      .from(vendorBills)
+      .where(eq(vendorBills.id, id));
+    return bill;
+  }
+
+  async createVendorBill(bill: InsertVendorBill): Promise<VendorBill> {
+    const [newBill] = await db
+      .insert(vendorBills)
+      .values(bill)
+      .returning();
+    return newBill;
+  }
+
+  async updateVendorBill(id: number, updates: Partial<InsertVendorBill>): Promise<VendorBill> {
+    const [updatedBill] = await db
+      .update(vendorBills)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(vendorBills.id, id))
+      .returning();
+    return updatedBill;
+  }
+
+  async deleteVendorBill(id: number): Promise<void> {
+    await db
+      .delete(vendorBills)
+      .where(eq(vendorBills.id, id));
+  }
+
+  // Vendor Bill Item operations
+  async getVendorBillItems(billId: number): Promise<VendorBillItem[]> {
+    return await db
+      .select()
+      .from(vendorBillItems)
+      .where(eq(vendorBillItems.vendorBillId, billId))
+      .orderBy(vendorBillItems.sortOrder, vendorBillItems.name);
+  }
+
+  async createVendorBillItem(item: InsertVendorBillItem): Promise<VendorBillItem> {
+    const [newItem] = await db
+      .insert(vendorBillItems)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async updateVendorBillItem(id: number, updates: Partial<InsertVendorBillItem>): Promise<VendorBillItem> {
+    const [updatedItem] = await db
+      .update(vendorBillItems)
+      .set(updates)
+      .where(eq(vendorBillItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteVendorBillItem(id: number): Promise<void> {
+    await db
+      .delete(vendorBillItems)
+      .where(eq(vendorBillItems.id, id));
+  }
+
+  // Customer Invoice operations
+  async getCustomerInvoices(projectId?: number): Promise<CustomerInvoice[]> {
+    const query = db
+      .select()
+      .from(customerInvoices);
+
+    if (projectId) {
+      query.where(eq(customerInvoices.projectId, projectId));
+    }
+
+    return await query.orderBy(desc(customerInvoices.createdAt));
+  }
+
+  async getCustomerInvoice(id: number): Promise<CustomerInvoice | undefined> {
+    const [invoice] = await db
+      .select()
+      .from(customerInvoices)
+      .where(eq(customerInvoices.id, id));
+    return invoice;
+  }
+
+  async createCustomerInvoice(invoice: InsertCustomerInvoice): Promise<CustomerInvoice> {
+    const [newInvoice] = await db
+      .insert(customerInvoices)
+      .values(invoice)
+      .returning();
+    return newInvoice;
+  }
+
+  async updateCustomerInvoice(id: number, updates: Partial<InsertCustomerInvoice>): Promise<CustomerInvoice> {
+    const [updatedInvoice] = await db
+      .update(customerInvoices)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(customerInvoices.id, id))
+      .returning();
+    return updatedInvoice;
+  }
+
+  async deleteCustomerInvoice(id: number): Promise<void> {
+    await db
+      .delete(customerInvoices)
+      .where(eq(customerInvoices.id, id));
+  }
+
+  // Customer Invoice Item operations
+  async getCustomerInvoiceItems(invoiceId: number): Promise<CustomerInvoiceItem[]> {
+    return await db
+      .select()
+      .from(customerInvoiceItems)
+      .where(eq(customerInvoiceItems.invoiceId, invoiceId))
+      .orderBy(customerInvoiceItems.sortOrder, customerInvoiceItems.name);
+  }
+
+  async createCustomerInvoiceItem(item: InsertCustomerInvoiceItem): Promise<CustomerInvoiceItem> {
+    const [newItem] = await db
+      .insert(customerInvoiceItems)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async updateCustomerInvoiceItem(id: number, updates: Partial<InsertCustomerInvoiceItem>): Promise<CustomerInvoiceItem> {
+    const [updatedItem] = await db
+      .update(customerInvoiceItems)
+      .set(updates)
+      .where(eq(customerInvoiceItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteCustomerInvoiceItem(id: number): Promise<void> {
+    await db
+      .delete(customerInvoiceItems)
+      .where(eq(customerInvoiceItems.id, id));
+  }
+
+  // Payment Record operations
+  async getPaymentRecords(invoiceId: number): Promise<PaymentRecord[]> {
+    return await db
+      .select()
+      .from(paymentRecords)
+      .where(eq(paymentRecords.invoiceId, invoiceId))
+      .orderBy(desc(paymentRecords.createdAt));
+  }
+
+  async createPaymentRecord(payment: InsertPaymentRecord): Promise<PaymentRecord> {
+    const [newPayment] = await db
+      .insert(paymentRecords)
+      .values(payment)
+      .returning();
+    return newPayment;
+  }
+
+  async updatePaymentRecord(id: number, updates: Partial<InsertPaymentRecord>): Promise<PaymentRecord> {
+    const [updatedPayment] = await db
+      .update(paymentRecords)
+      .set(updates)
+      .where(eq(paymentRecords.id, id))
+      .returning();
+    return updatedPayment;
+  }
+
+  async deletePaymentRecord(id: number): Promise<void> {
+    await db
+      .delete(paymentRecords)
+      .where(eq(paymentRecords.id, id));
   }
 }
 

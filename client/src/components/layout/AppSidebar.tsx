@@ -11,6 +11,7 @@ import {
   Truck,
   BarChart3,
   DollarSign,
+  CreditCard,
   X
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ const navItems = [
   { path: "/documents", icon: FileText, label: "Documents" },
   { path: "/vendors", icon: Truck, label: "Vendors" },
   { path: "/costs", icon: DollarSign, label: "Cost Management" },
+  { path: "/finances", icon: CreditCard, label: "Job Finances" },
   { path: "/reports", icon: BarChart3, label: "Reports" },
 ];
 

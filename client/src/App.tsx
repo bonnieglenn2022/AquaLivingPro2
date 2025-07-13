@@ -17,6 +17,7 @@ import Documents from "@/pages/documents";
 import Vendors from "@/pages/vendors";
 import Reports from "@/pages/reports";
 import Costs from "@/pages/costs";
+import Finances from "@/pages/finances";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -60,6 +61,7 @@ function Router() {
           <Route path="/vendors" component={Vendors} />
           <Route path="/reports" component={Reports} />
           <Route path="/costs" component={Costs} />
+          <Route path="/finances" component={Finances} />
         </>
       )}
       <Route component={NotFound} />

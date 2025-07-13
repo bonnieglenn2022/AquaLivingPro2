@@ -18,7 +18,18 @@ import {
   insertProjectTodoSchema,
   insertCompanySchema,
   insertCompanyLocationSchema,
-  insertUserInvitationSchema
+  insertUserInvitationSchema,
+  insertProjectBudgetSchema,
+  insertBudgetItemSchema,
+  insertPurchaseOrderSchema,
+  insertPurchaseOrderItemSchema,
+  insertWorkOrderSchema,
+  insertWorkOrderItemSchema,
+  insertVendorBillSchema,
+  insertVendorBillItemSchema,
+  insertCustomerInvoiceSchema,
+  insertCustomerInvoiceItemSchema,
+  insertPaymentRecordSchema
 } from "@shared/schema";
 
 // Utility function to generate company codes
@@ -1119,6 +1130,349 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting cost item tier:", error);
       res.status(500).json({ message: "Failed to delete cost item tier" });
+    }
+  });
+
+  // =================== FINANCIAL MANAGEMENT ROUTES ===================
+
+  // Project Budget Routes
+  app.get('/api/budgets/:projectId?', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const projectId = req.params.projectId ? parseInt(req.params.projectId) : undefined;
+      if (projectId) {
+        const budgets = await storage.getProjectBudgets(projectId);
+        res.json(budgets);
+      } else {
+        // Return empty array if no project specified
+        res.json([]);
+      }
+    } catch (error) {
+      console.error("Error fetching project budgets:", error);
+      res.status(500).json({ message: "Failed to fetch project budgets" });
+    }
+  });
+
+  app.post('/api/budgets', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const budgetData = insertProjectBudgetSchema.parse(req.body);
+      const budget = await storage.createProjectBudget({ ...budgetData, companyId: company.id });
+      res.status(201).json(budget);
+    } catch (error) {
+      console.error("Error creating project budget:", error);
+      res.status(500).json({ message: "Failed to create project budget" });
+    }
+  });
+
+  app.put('/api/budgets/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const budget = await storage.updateProjectBudget(id, updates);
+      res.json(budget);
+    } catch (error) {
+      console.error("Error updating project budget:", error);
+      res.status(500).json({ message: "Failed to update project budget" });
+    }
+  });
+
+  app.delete('/api/budgets/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProjectBudget(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting project budget:", error);
+      res.status(500).json({ message: "Failed to delete project budget" });
+    }
+  });
+
+  // Purchase Order Routes
+  app.get('/api/purchase-orders/:projectId?', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const projectId = req.params.projectId ? parseInt(req.params.projectId) : undefined;
+      const purchaseOrders = await storage.getPurchaseOrders(projectId);
+      res.json(purchaseOrders);
+    } catch (error) {
+      console.error("Error fetching purchase orders:", error);
+      res.status(500).json({ message: "Failed to fetch purchase orders" });
+    }
+  });
+
+  app.post('/api/purchase-orders', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const poData = insertPurchaseOrderSchema.parse(req.body);
+      const purchaseOrder = await storage.createPurchaseOrder({ ...poData, companyId: company.id });
+      res.status(201).json(purchaseOrder);
+    } catch (error) {
+      console.error("Error creating purchase order:", error);
+      res.status(500).json({ message: "Failed to create purchase order" });
+    }
+  });
+
+  app.put('/api/purchase-orders/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const purchaseOrder = await storage.updatePurchaseOrder(id, updates);
+      res.json(purchaseOrder);
+    } catch (error) {
+      console.error("Error updating purchase order:", error);
+      res.status(500).json({ message: "Failed to update purchase order" });
+    }
+  });
+
+  app.delete('/api/purchase-orders/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePurchaseOrder(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting purchase order:", error);
+      res.status(500).json({ message: "Failed to delete purchase order" });
+    }
+  });
+
+  // Work Order Routes
+  app.get('/api/work-orders/:projectId?', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const projectId = req.params.projectId ? parseInt(req.params.projectId) : undefined;
+      const workOrders = await storage.getWorkOrders(projectId);
+      res.json(workOrders);
+    } catch (error) {
+      console.error("Error fetching work orders:", error);
+      res.status(500).json({ message: "Failed to fetch work orders" });
+    }
+  });
+
+  app.post('/api/work-orders', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const woData = insertWorkOrderSchema.parse(req.body);
+      const workOrder = await storage.createWorkOrder({ ...woData, companyId: company.id });
+      res.status(201).json(workOrder);
+    } catch (error) {
+      console.error("Error creating work order:", error);
+      res.status(500).json({ message: "Failed to create work order" });
+    }
+  });
+
+  app.put('/api/work-orders/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const workOrder = await storage.updateWorkOrder(id, updates);
+      res.json(workOrder);
+    } catch (error) {
+      console.error("Error updating work order:", error);
+      res.status(500).json({ message: "Failed to update work order" });
+    }
+  });
+
+  app.delete('/api/work-orders/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteWorkOrder(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting work order:", error);
+      res.status(500).json({ message: "Failed to delete work order" });
+    }
+  });
+
+  // Vendor Bill Routes
+  app.get('/api/vendor-bills/:projectId?', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const projectId = req.params.projectId ? parseInt(req.params.projectId) : undefined;
+      const vendorBills = await storage.getVendorBills(projectId);
+      res.json(vendorBills);
+    } catch (error) {
+      console.error("Error fetching vendor bills:", error);
+      res.status(500).json({ message: "Failed to fetch vendor bills" });
+    }
+  });
+
+  app.post('/api/vendor-bills', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const billData = insertVendorBillSchema.parse(req.body);
+      const vendorBill = await storage.createVendorBill({ ...billData, companyId: company.id });
+      res.status(201).json(vendorBill);
+    } catch (error) {
+      console.error("Error creating vendor bill:", error);
+      res.status(500).json({ message: "Failed to create vendor bill" });
+    }
+  });
+
+  app.put('/api/vendor-bills/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const vendorBill = await storage.updateVendorBill(id, updates);
+      res.json(vendorBill);
+    } catch (error) {
+      console.error("Error updating vendor bill:", error);
+      res.status(500).json({ message: "Failed to update vendor bill" });
+    }
+  });
+
+  app.delete('/api/vendor-bills/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteVendorBill(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting vendor bill:", error);
+      res.status(500).json({ message: "Failed to delete vendor bill" });
+    }
+  });
+
+  // Customer Invoice Routes
+  app.get('/api/customer-invoices/:projectId?', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const projectId = req.params.projectId ? parseInt(req.params.projectId) : undefined;
+      const customerInvoices = await storage.getCustomerInvoices(projectId);
+      res.json(customerInvoices);
+    } catch (error) {
+      console.error("Error fetching customer invoices:", error);
+      res.status(500).json({ message: "Failed to fetch customer invoices" });
+    }
+  });
+
+  app.post('/api/customer-invoices', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const invoiceData = insertCustomerInvoiceSchema.parse(req.body);
+      const customerInvoice = await storage.createCustomerInvoice({ ...invoiceData, companyId: company.id });
+      res.status(201).json(customerInvoice);
+    } catch (error) {
+      console.error("Error creating customer invoice:", error);
+      res.status(500).json({ message: "Failed to create customer invoice" });
+    }
+  });
+
+  app.put('/api/customer-invoices/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const customerInvoice = await storage.updateCustomerInvoice(id, updates);
+      res.json(customerInvoice);
+    } catch (error) {
+      console.error("Error updating customer invoice:", error);
+      res.status(500).json({ message: "Failed to update customer invoice" });
+    }
+  });
+
+  app.delete('/api/customer-invoices/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCustomerInvoice(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting customer invoice:", error);
+      res.status(500).json({ message: "Failed to delete customer invoice" });
+    }
+  });
+
+  // Payment Record Routes
+  app.get('/api/payment-records/:invoiceId', isAuthenticated, async (req, res) => {
+    try {
+      const invoiceId = parseInt(req.params.invoiceId);
+      const payments = await storage.getPaymentRecords(invoiceId);
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching payment records:", error);
+      res.status(500).json({ message: "Failed to fetch payment records" });
+    }
+  });
+
+  app.post('/api/payment-records', isAuthenticated, async (req, res) => {
+    try {
+      const paymentData = insertPaymentRecordSchema.parse(req.body);
+      const payment = await storage.createPaymentRecord(paymentData);
+      res.status(201).json(payment);
+    } catch (error) {
+      console.error("Error creating payment record:", error);
+      res.status(500).json({ message: "Failed to create payment record" });
+    }
+  });
+
+  app.put('/api/payment-records/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const payment = await storage.updatePaymentRecord(id, updates);
+      res.json(payment);
+    } catch (error) {
+      console.error("Error updating payment record:", error);
+      res.status(500).json({ message: "Failed to update payment record" });
+    }
+  });
+
+  app.delete('/api/payment-records/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePaymentRecord(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting payment record:", error);
+      res.status(500).json({ message: "Failed to delete payment record" });
     }
   });
 
