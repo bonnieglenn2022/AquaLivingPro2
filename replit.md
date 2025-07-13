@@ -9,6 +9,7 @@ AquaLiving Pro is a comprehensive business management application specifically d
 Preferred communication style: Simple, everyday language.
 Auto-generate company slugs from company names instead of asking users to create them manually.
 Remove Office Locations setup step to streamline the company creation process.
+Single vCard import functionality: User prefers importing individual contacts from iPhone as vCard (.vcf) files rather than bulk imports or manual entry forms.
 
 ## System Architecture
 
