@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Phone, Mail, MapPin, User, TrendingUp, Filter, Upload, FileText, Flame, TrendingDown } from "lucide-react";
+import { Plus, Phone, Mail, MapPin, User, TrendingUp, Filter, Upload, FileText, Flame, TrendingDown, Smartphone } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Customer, InsertCustomer } from "@shared/schema";
@@ -24,6 +24,7 @@ export default function Leads() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isContactsDialogOpen, setIsContactsDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
@@ -86,6 +87,53 @@ export default function Leads() {
       toast({
         title: "Upload Failed",
         description: `Failed to upload leads: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const importContactsMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await fetch('/api/customers/import-contacts', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Import failed');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      setIsContactsDialogOpen(false);
+      toast({
+        title: "Import Complete",
+        description: data.message,
+      });
+    },
+    onError: (error) => {
+      console.error("Error importing contacts:", error);
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Import Failed",
+        description: `Failed to import contacts: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -384,6 +432,15 @@ export default function Leads() {
                     <Button variant="outline" className="border-pool-blue text-pool-blue hover:bg-pool-blue hover:text-white">
                       <Upload className="h-4 w-4 mr-2" />
                       Upload CSV/Excel
+                    </Button>
+                  </DialogTrigger>
+                </Dialog>
+                
+                <Dialog open={isContactsDialogOpen} onOpenChange={setIsContactsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white">
+                      <Smartphone className="h-4 w-4 mr-2" />
+                      Import iPhone Contacts
                     </Button>
                   </DialogTrigger>
                 </Dialog>
@@ -841,6 +898,78 @@ Jane,Smith,jane.smith@email.com,(555) 987-6543,456 Oak Ave,Dallas,TX,75201,Refer
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Import iPhone Contacts Dialog */}
+      <Dialog open={isContactsDialogOpen} onOpenChange={setIsContactsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Import iPhone Contacts</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border-2 border-dashed border-green-300 rounded-lg p-8 text-center">
+              <Smartphone className="h-12 w-12 text-green-500 mx-auto mb-4" />
+              <label className="cursor-pointer">
+                <input
+                  type="file"
+                  accept=".vcf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      importContactsMutation.mutate(file);
+                    }
+                  }}
+                  disabled={importContactsMutation.isPending}
+                />
+                <div>
+                  <p className="text-lg font-medium text-slate-900 mb-2">
+                    Drop your contacts file here or click to browse
+                  </p>
+                  <p className="text-sm text-slate-600">
+                    Supports vCard (.vcf) files from iPhone contacts export
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {importContactsMutation.isPending && (
+              <div className="flex items-center justify-center py-4">
+                <div className="w-6 h-6 border-4 border-green-500 border-t-transparent rounded-full animate-spin mr-3"></div>
+                <span className="text-slate-600">Importing contacts...</span>
+              </div>
+            )}
+
+            <div className="bg-green-50 p-4 rounded-lg">
+              <h4 className="font-medium text-slate-900 mb-2">How to export iPhone contacts:</h4>
+              <div className="text-sm text-slate-600 space-y-2">
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-green-600 mt-0.5">1.</span>
+                  <span>Open Settings → Mail → Accounts → iCloud</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-green-600 mt-0.5">2.</span>
+                  <span>Make sure Contacts is enabled</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-green-600 mt-0.5">3.</span>
+                  <span>Go to iCloud.com on your computer</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-green-600 mt-0.5">4.</span>
+                  <span>Open Contacts, select all contacts</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="font-semibold text-green-600 mt-0.5">5.</span>
+                  <span>Click the gear icon and select "Export vCard"</span>
+                </div>
+              </div>
+              <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+                <strong>Note:</strong> Only contacts with names will be imported as leads. The system will automatically extract phone numbers and email addresses.
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

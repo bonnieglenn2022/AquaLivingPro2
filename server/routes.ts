@@ -31,16 +31,110 @@ function generateCompanyCode(): string {
   return result;
 }
 
+// Parse vCard file content and extract contact information
+function parseVCardFile(content: string): Array<{
+  firstName: string;
+  lastName: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}> {
+  const contacts: Array<{
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  }> = [];
+
+  // Split content into individual vCard entries
+  const vCards = content.split(/BEGIN:VCARD/i).slice(1);
+
+  for (const vCardContent of vCards) {
+    const contact: any = {};
+    const lines = vCardContent.split('\n');
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      
+      // Parse full name (FN) or structured name (N)
+      if (trimmedLine.startsWith('FN:')) {
+        const fullName = trimmedLine.substring(3).trim();
+        const nameParts = fullName.split(' ');
+        if (nameParts.length >= 2) {
+          contact.firstName = nameParts[0];
+          contact.lastName = nameParts.slice(1).join(' ');
+        }
+      } else if (trimmedLine.startsWith('N:')) {
+        // N format: LastName;FirstName;MiddleName;Prefix;Suffix
+        const nameParts = trimmedLine.substring(2).split(';');
+        if (nameParts.length >= 2) {
+          contact.lastName = nameParts[0].trim();
+          contact.firstName = nameParts[1].trim();
+        }
+      }
+      
+      // Parse email
+      else if (trimmedLine.includes('EMAIL')) {
+        const emailMatch = trimmedLine.match(/EMAIL[^:]*:(.+)/i);
+        if (emailMatch) {
+          contact.email = emailMatch[1].trim();
+        }
+      }
+      
+      // Parse phone number
+      else if (trimmedLine.includes('TEL')) {
+        const phoneMatch = trimmedLine.match(/TEL[^:]*:(.+)/i);
+        if (phoneMatch) {
+          // Clean up phone number - remove non-digit characters except + and spaces
+          const phone = phoneMatch[1].trim().replace(/[^\d\s\+\-\(\)]/g, '');
+          if (phone) {
+            contact.phone = phone;
+          }
+        }
+      }
+      
+      // Parse address
+      else if (trimmedLine.includes('ADR')) {
+        const addressMatch = trimmedLine.match(/ADR[^:]*:(.+)/i);
+        if (addressMatch) {
+          // ADR format: PostOfficeBox;ExtendedAddress;Street;Locality;Region;PostalCode;Country
+          const addressParts = addressMatch[1].split(';');
+          const street = addressParts[2]?.trim();
+          if (street) {
+            contact.address = street;
+          }
+        }
+      }
+    }
+
+    // Only add contacts that have at least a first and last name
+    if (contact.firstName && contact.lastName) {
+      contacts.push({
+        firstName: contact.firstName,
+        lastName: contact.lastName,
+        email: contact.email || undefined,
+        phone: contact.phone || undefined,
+        address: contact.address || undefined,
+      });
+    }
+  }
+
+  return contacts;
+}
+
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-    if (allowedTypes.includes(file.mimetype) || file.originalname.endsWith('.csv') || file.originalname.endsWith('.xls') || file.originalname.endsWith('.xlsx')) {
+    const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/vcard'];
+    const allowedExtensions = ['.csv', '.xls', '.xlsx', '.vcf'];
+    
+    if (allowedTypes.includes(file.mimetype) || allowedExtensions.some(ext => file.originalname.toLowerCase().endsWith(ext))) {
       cb(null, true);
     } else {
-      cb(new Error('Only CSV and Excel files are allowed'));
+      cb(new Error('Only CSV, Excel, and vCard files are allowed'));
     }
   }
 });
@@ -200,6 +294,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching customers:", error);
       res.status(500).json({ message: "Failed to fetch customers" });
+    }
+  });
+
+  // Import leads from iPhone contacts (vCard)
+  app.post('/api/customers/import-contacts', isAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+      }
+
+      // Validate file type
+      if (!req.file.originalname.toLowerCase().endsWith('.vcf')) {
+        return res.status(400).json({ message: 'Only vCard (.vcf) files are supported' });
+      }
+
+      // Validate file size (5MB max)
+      if (req.file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({ message: 'File size must be less than 5MB' });
+      }
+
+      const fileContent = req.file.buffer.toString('utf-8');
+      const contacts = parseVCardFile(fileContent);
+      
+      let imported = 0;
+      let skipped = 0;
+
+      for (const contact of contacts) {
+        try {
+          // Only import contacts with both first and last names
+          if (contact.firstName && contact.lastName) {
+            await storage.createCustomer({
+              firstName: contact.firstName,
+              lastName: contact.lastName,
+              email: contact.email || null,
+              phone: contact.phone || null,
+              address: contact.address || null,
+              city: null,
+              state: null,
+              zipCode: null,
+              leadSource: "iPhone Contacts",
+              status: "new_lead",
+              priority: "warm",
+              salesperson: null,
+              notes: null,
+            });
+            imported++;
+          } else {
+            skipped++;
+          }
+        } catch (error) {
+          console.error('Error importing contact:', error);
+          skipped++;
+        }
+      }
+
+      res.json({
+        message: `Successfully imported ${imported} contacts from iPhone. ${skipped} contacts skipped (missing name or duplicate).`,
+        imported,
+        skipped
+      });
+
+    } catch (error) {
+      console.error('Error importing contacts:', error);
+      res.status(500).json({ message: 'Failed to import contacts' });
     }
   });
 
