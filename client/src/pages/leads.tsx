@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Phone, Mail, MapPin, User, TrendingUp, Filter, Upload, FileText, Flame, TrendingDown, Smartphone } from "lucide-react";
+import { Plus, Phone, Mail, MapPin, User, Filter, Upload, FileText, Smartphone } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import type { Customer, InsertCustomer } from "@shared/schema";
@@ -27,15 +27,12 @@ export default function Leads() {
   const [isContactsDialogOpen, setIsContactsDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [formData, setFormData] = useState({
     leadSource: "",
-    priority: "warm",
     salesperson: ""
   });
   const [editFormData, setEditFormData] = useState({
     leadSource: "",
-    priority: "warm",
     salesperson: ""
   });
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -147,7 +144,7 @@ export default function Leads() {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       setIsCreateDialogOpen(false);
       setIsContactsDialogOpen(false);
-      setFormData({ leadSource: "", priority: "warm", salesperson: "" });
+      setFormData({ leadSource: "", salesperson: "" });
       toast({
         title: "Lead Created",
         description: "New lead has been added successfully.",
@@ -235,8 +232,7 @@ export default function Leads() {
 
   const filteredCustomers = customers.filter((customer: Customer) => {
     const statusMatch = statusFilter === "all" || customer.status === statusFilter;
-    const priorityMatch = priorityFilter === "all" || customer.priority === priorityFilter;
-    return statusMatch && priorityMatch;
+    return statusMatch;
   });
 
   const metrics = {
@@ -244,9 +240,6 @@ export default function Leads() {
     inDesign: customers.filter((c: Customer) => ["design", "design_meeting", "redesign"].includes(c.status)).length,
     bidding: customers.filter((c: Customer) => ["bid", "budget_meeting", "rebid"].includes(c.status)).length,
     sold: customers.filter((c: Customer) => c.status === "sold").length,
-    hot: customers.filter((c: Customer) => c.priority === "hot").length,
-    warm: customers.filter((c: Customer) => c.priority === "warm").length,
-    cold: customers.filter((c: Customer) => c.priority === "cold").length,
   };
 
   const handleCreateLead = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -265,7 +258,6 @@ export default function Leads() {
       zipCode: (formData.get("zipCode") as string) || null,
       leadSource: (formData.get("leadSource") as string) || null,
       status: "new_lead",
-      priority: (formData.get("priority") as string) || "warm",
       salesperson: (formData.get("salesperson") as string) || null,
       notes: (formData.get("notes") as string) || null,
     };
@@ -282,7 +274,6 @@ export default function Leads() {
     setSelectedCustomer(customer);
     setEditFormData({
       leadSource: customer.leadSource || "",
-      priority: customer.priority || "warm",
       salesperson: customer.salesperson || ""
     });
     setIsEditDialogOpen(true);
@@ -295,12 +286,7 @@ export default function Leads() {
     });
   };
 
-  const handlePriorityChange = (customerId: number, newPriority: string) => {
-    updateCustomerMutation.mutate({ 
-      id: customerId, 
-      updates: { priority: newPriority } 
-    });
-  };
+
 
   const handleSalespersonChange = (customerId: number, newSalesperson: string) => {
     updateCustomerMutation.mutate({ 
@@ -329,7 +315,7 @@ export default function Leads() {
           </div>
 
           {/* Metrics Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
@@ -374,42 +360,6 @@ export default function Leads() {
                     <p className="text-2xl font-bold text-emerald-600">{metrics.sold}</p>
                   </div>
                   <div className="w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold">S</div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-600 text-sm">Hot</p>
-                    <p className="text-2xl font-bold text-red-600">{metrics.hot}</p>
-                  </div>
-                  <Flame className="h-6 w-6 text-red-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-600 text-sm">Warm</p>
-                    <p className="text-2xl font-bold text-yellow-600">{metrics.warm}</p>
-                  </div>
-                  <TrendingUp className="h-6 w-6 text-yellow-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-600 text-sm">Cold</p>
-                    <p className="text-2xl font-bold text-blue-600">{metrics.cold}</p>
-                  </div>
-                  <TrendingDown className="h-6 w-6 text-blue-500" />
                 </div>
               </CardContent>
             </Card>
@@ -460,18 +410,6 @@ export default function Leads() {
                   <SelectItem value="design">Design</SelectItem>
                   <SelectItem value="bid">Bid</SelectItem>
                   <SelectItem value="sold">Sold</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Priorities</SelectItem>
-                  <SelectItem value="hot">Hot</SelectItem>
-                  <SelectItem value="warm">Warm</SelectItem>
-                  <SelectItem value="cold">Cold</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -542,12 +480,6 @@ export default function Leads() {
                           <Badge variant={customer.status === "sold" ? "default" : "secondary"}>
                             {customer.status?.replace(/_/g, " ") || "New Lead"}
                           </Badge>
-                          <div className="flex items-center gap-1">
-                            {customer.priority === "hot" && <Flame className="h-4 w-4 text-red-500" />}
-                            {customer.priority === "warm" && <TrendingUp className="h-4 w-4 text-yellow-500" />}
-                            {customer.priority === "cold" && <TrendingDown className="h-4 w-4 text-blue-500" />}
-                            <span className="text-xs text-slate-600 capitalize">{customer.priority || "warm"}</span>
-                          </div>
                         </div>
 
                         <div className="flex gap-2 items-center flex-wrap">
@@ -571,20 +503,7 @@ export default function Leads() {
                             </SelectContent>
                           </Select>
 
-                          <Select
-                            value={customer.priority || "warm"}
-                            onValueChange={(value) => handlePriorityChange(customer.id, value)}
-                            disabled={updateCustomerMutation.isPending}
-                          >
-                            <SelectTrigger className="w-24">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="hot">Hot</SelectItem>
-                              <SelectItem value="warm">Warm</SelectItem>
-                              <SelectItem value="cold">Cold</SelectItem>
-                            </SelectContent>
-                          </Select>
+
 
                           <Select
                             value={customer.salesperson || "unassigned"}
@@ -646,19 +565,7 @@ export default function Leads() {
                 <Label htmlFor="leadSource">Lead Source</Label>
                 <Input id="leadSource" name="leadSource" placeholder="e.g., Website, Referral" />
               </div>
-              <div>
-                <Label htmlFor="priority">Priority</Label>
-                <Select name="priority" defaultValue="warm">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hot">Hot</SelectItem>
-                    <SelectItem value="warm">Warm</SelectItem>
-                    <SelectItem value="cold">Cold</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -702,7 +609,7 @@ export default function Leads() {
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => {
                 setIsCreateDialogOpen(false);
-                setFormData({ leadSource: "", priority: "warm", salesperson: "" });
+                setFormData({ leadSource: "", salesperson: "" });
               }}>
                 Cancel
               </Button>
@@ -758,7 +665,7 @@ export default function Leads() {
               <h4 className="font-medium text-slate-900 mb-2">Expected CSV Format:</h4>
               <div className="text-sm text-slate-600 space-y-1">
                 <p><strong>Required:</strong> firstName, lastName (or First Name, Last Name)</p>
-                <p><strong>Optional:</strong> email, phone, address, city, state, zipCode, leadSource, priority, salesperson, notes</p>
+                <p><strong>Optional:</strong> email, phone, address, city, state, zipCode, leadSource, salesperson, notes</p>
               </div>
               <div className="mt-3">
                 <Button 
@@ -766,9 +673,9 @@ export default function Leads() {
                   size="sm"
                   onClick={() => {
                     // Create and download sample CSV
-                    const csv = `firstName,lastName,email,phone,address,city,state,zipCode,leadSource,priority,salesperson,notes
-John,Doe,john.doe@email.com,(555) 123-4567,123 Main St,Austin,TX,78701,Website,warm,tracy_glenn,Interested in pool installation
-Jane,Smith,jane.smith@email.com,(555) 987-6543,456 Oak Ave,Dallas,TX,75201,Referral,hot,,Called about spa addition`;
+                    const csv = `firstName,lastName,email,phone,address,city,state,zipCode,leadSource,salesperson,notes
+John,Doe,john.doe@email.com,(555) 123-4567,123 Main St,Austin,TX,78701,Website,tracy_glenn,Interested in pool installation
+Jane,Smith,jane.smith@email.com,(555) 987-6543,456 Oak Ave,Dallas,TX,75201,Referral,,Called about spa addition`;
                     
                     const blob = new Blob([csv], { type: 'text/csv' });
                     const url = window.URL.createObjectURL(blob);
@@ -851,15 +758,7 @@ Jane,Smith,jane.smith@email.com,(555) 987-6543,456 Oak Ave,Dallas,TX,75201,Refer
                         {selectedCustomer.status?.replace(/_/g, " ") || "New Lead"}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Priority:</span>
-                      <div className="flex items-center gap-1">
-                        {selectedCustomer.priority === "hot" && <Flame className="h-4 w-4 text-red-500" />}
-                        {selectedCustomer.priority === "warm" && <TrendingUp className="h-4 w-4 text-yellow-500" />}
-                        {selectedCustomer.priority === "cold" && <TrendingDown className="h-4 w-4 text-blue-500" />}
-                        <span className="capitalize">{selectedCustomer.priority || "warm"}</span>
-                      </div>
-                    </div>
+
                     {selectedCustomer.leadSource && (
                       <div className="flex items-center gap-2">
                         <span className="font-medium">Lead Source:</span>
