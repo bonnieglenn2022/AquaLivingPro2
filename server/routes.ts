@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import multer from "multer";
+import { parse } from "csv-parse";
 import { z } from "zod";
 import { 
   insertCustomerSchema, 
@@ -28,18 +30,21 @@ function generateCompanyCode(): string {
   }
   return result;
 }
-import { 
-  insertCustomerSchema,
-  insertProjectSchema,
-  insertEstimateSchema,
-  insertEstimateItemSchema,
-  insertVendorSchema,
-  insertTaskSchema,
-  insertEquipmentSchema,
-  insertChangeOrderSchema,
-  insertActivitySchema,
-} from "@shared/schema";
-import { z } from "zod";
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['text/csv', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    if (allowedTypes.includes(file.mimetype) || file.originalname.endsWith('.csv') || file.originalname.endsWith('.xls') || file.originalname.endsWith('.xlsx')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV and Excel files are allowed'));
+    }
+  }
+});
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -195,6 +200,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching customers:", error);
       res.status(500).json({ message: "Failed to fetch customers" });
+    }
+  });
+
+  // Upload leads from CSV file
+  app.post('/api/customers/upload', isAuthenticated, upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      const fileContent = req.file.buffer.toString('utf-8');
+      const results: any[] = [];
+      const errors: string[] = [];
+
+      // Parse CSV content
+      parse(fileContent, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      }, async (err, records) => {
+        if (err) {
+          return res.status(400).json({ message: "Error parsing CSV file", error: err.message });
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const [index, record] of records.entries()) {
+          try {
+            // Map CSV columns to customer fields (flexible column naming)
+            const customerData = {
+              firstName: record.firstName || record['First Name'] || record.first_name || '',
+              lastName: record.lastName || record['Last Name'] || record.last_name || '',
+              email: record.email || record.Email || record.email_address || null,
+              phone: record.phone || record.Phone || record.phone_number || null,
+              address: record.address || record.Address || record.street_address || null,
+              city: record.city || record.City || null,
+              state: record.state || record.State || null,
+              zipCode: record.zipCode || record['Zip Code'] || record.zip_code || record.zip || null,
+              leadSource: record.leadSource || record['Lead Source'] || record.lead_source || record.source || null,
+              status: 'new_lead', // Default status for uploaded leads
+              priority: record.priority || record.Priority || 'warm',
+              salesperson: record.salesperson || record.Salesperson || record.sales_person || null,
+              notes: record.notes || record.Notes || record.comments || null,
+            };
+
+            // Validate required fields
+            if (!customerData.firstName && !customerData.lastName) {
+              errors.push(`Row ${index + 2}: First name or last name is required`);
+              errorCount++;
+              continue;
+            }
+
+            // Validate with schema
+            const validatedData = insertCustomerSchema.parse(customerData);
+            await storage.createCustomer(validatedData);
+            successCount++;
+
+          } catch (error) {
+            console.error(`Error processing row ${index + 2}:`, error);
+            errors.push(`Row ${index + 2}: ${error instanceof Error ? error.message : 'Invalid data'}`);
+            errorCount++;
+          }
+        }
+
+        res.json({
+          message: `Upload completed: ${successCount} leads imported, ${errorCount} errors`,
+          successCount,
+          errorCount,
+          errors: errors.slice(0, 10) // Limit to first 10 errors for display
+        });
+      });
+
+    } catch (error) {
+      console.error("Error uploading leads:", error);
+      res.status(500).json({ message: "Failed to upload leads", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
