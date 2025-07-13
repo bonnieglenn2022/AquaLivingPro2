@@ -292,6 +292,45 @@ export const internalMessages = pgTable("internal_messages", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Cost management tables
+export const costCategories = pgTable("cost_categories", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id"),
+  name: varchar("name", { length: 100 }).notNull(),
+  description: text("description"),
+  sortOrder: integer("sort_order").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const costItems = pgTable("cost_items", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id"),
+  categoryId: integer("category_id").notNull().references(() => costCategories.id),
+  name: varchar("name", { length: 200 }).notNull(),
+  description: text("description"),
+  unitType: varchar("unit_type", { length: 50 }).notNull(), // sq_ft, linear_ft, cubic_yard, each, hour, etc.
+  costPerUnit: decimal("cost_per_unit", { precision: 10, scale: 2 }).notNull(),
+  supplierName: varchar("supplier_name", { length: 100 }),
+  supplierContact: varchar("supplier_contact", { length: 100 }),
+  notes: text("notes"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const costHistory = pgTable("cost_history", {
+  id: serial("id").primaryKey(),
+  costItemId: integer("cost_item_id").notNull().references(() => costItems.id),
+  previousCost: decimal("previous_cost", { precision: 10, scale: 2 }).notNull(),
+  newCost: decimal("new_cost", { precision: 10, scale: 2 }).notNull(),
+  changeReason: varchar("change_reason", { length: 200 }),
+  changedBy: varchar("changed_by").notNull(),
+  changedAt: timestamp("changed_at").defaultNow(),
+});
+
 // Relations
 export const customersRelations = relations(customers, ({ many }) => ({
   projects: many(projects),
@@ -400,6 +439,25 @@ export const activitiesRelations = relations(activities, ({ one }) => ({
   }),
 }));
 
+export const costCategoriesRelations = relations(costCategories, ({ many }) => ({
+  costItems: many(costItems),
+}));
+
+export const costItemsRelations = relations(costItems, ({ one, many }) => ({
+  category: one(costCategories, {
+    fields: [costItems.categoryId],
+    references: [costCategories.id],
+  }),
+  history: many(costHistory),
+}));
+
+export const costHistoryRelations = relations(costHistory, ({ one }) => ({
+  costItem: one(costItems, {
+    fields: [costHistory.costItemId],
+    references: [costItems.id],
+  }),
+}));
+
 // Insert schemas
 export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true,
@@ -481,6 +539,24 @@ export const insertUserInvitationSchema = createInsertSchema(userInvitations).om
   createdAt: true,
 });
 
+export const insertCostCategorySchema = createInsertSchema(costCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCostItemSchema = createInsertSchema(costItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastUpdated: true,
+});
+
+export const insertCostHistorySchema = createInsertSchema(costHistory).omit({
+  id: true,
+  changedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -517,3 +593,9 @@ export type ProjectTodo = typeof projectTodos.$inferSelect;
 export type InsertProjectTodo = z.infer<typeof insertProjectTodoSchema>;
 export type InternalMessage = typeof internalMessages.$inferSelect;
 export type InsertInternalMessage = typeof internalMessages.$inferInsert;
+export type CostCategory = typeof costCategories.$inferSelect;
+export type InsertCostCategory = z.infer<typeof insertCostCategorySchema>;
+export type CostItem = typeof costItems.$inferSelect;
+export type InsertCostItem = z.infer<typeof insertCostItemSchema>;
+export type CostHistory = typeof costHistory.$inferSelect;
+export type InsertCostHistory = z.infer<typeof insertCostHistorySchema>;

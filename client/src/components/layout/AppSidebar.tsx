@@ -10,6 +10,7 @@ import {
   FileText,
   Truck,
   BarChart3,
+  DollarSign,
   X
 } from "lucide-react";
 
@@ -21,6 +22,7 @@ const navItems = [
   { path: "/scheduling", icon: Calendar, label: "Scheduling" },
   { path: "/documents", icon: FileText, label: "Documents" },
   { path: "/vendors", icon: Truck, label: "Vendors" },
+  { path: "/costs", icon: DollarSign, label: "Cost Management" },
   { path: "/reports", icon: BarChart3, label: "Reports" },
 ];
 

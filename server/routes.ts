@@ -940,6 +940,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cost Management routes
+  app.get('/api/cost-categories', isAuthenticated, async (req, res) => {
+    try {
+      const categories = await storage.getCostCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching cost categories:", error);
+      res.status(500).json({ message: "Failed to fetch cost categories" });
+    }
+  });
+
+  app.post('/api/cost-categories', isAuthenticated, async (req, res) => {
+    try {
+      const categoryData = req.body;
+      const category = await storage.createCostCategory(categoryData);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error("Error creating cost category:", error);
+      res.status(500).json({ message: "Failed to create cost category" });
+    }
+  });
+
+  app.put('/api/cost-categories/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const category = await storage.updateCostCategory(id, updates);
+      res.json(category);
+    } catch (error) {
+      console.error("Error updating cost category:", error);
+      res.status(500).json({ message: "Failed to update cost category" });
+    }
+  });
+
+  app.delete('/api/cost-categories/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCostCategory(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting cost category:", error);
+      res.status(500).json({ message: "Failed to delete cost category" });
+    }
+  });
+
+  app.get('/api/cost-items', isAuthenticated, async (req, res) => {
+    try {
+      const { categoryId } = req.query;
+      const items = categoryId 
+        ? await storage.getCostItems(parseInt(categoryId as string))
+        : await storage.getCostItems();
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching cost items:", error);
+      res.status(500).json({ message: "Failed to fetch cost items" });
+    }
+  });
+
+  app.post('/api/cost-items', isAuthenticated, async (req, res) => {
+    try {
+      const itemData = req.body;
+      const item = await storage.createCostItem(itemData);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error creating cost item:", error);
+      res.status(500).json({ message: "Failed to create cost item" });
+    }
+  });
+
+  app.put('/api/cost-items/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const item = await storage.updateCostItem(id, updates);
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating cost item:", error);
+      res.status(500).json({ message: "Failed to update cost item" });
+    }
+  });
+
+  app.delete('/api/cost-items/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCostItem(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting cost item:", error);
+      res.status(500).json({ message: "Failed to delete cost item" });
+    }
+  });
+
+  app.get('/api/cost-items/:id/history', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const history = await storage.getCostHistory(id);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching cost history:", error);
+      res.status(500).json({ message: "Failed to fetch cost history" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -16,6 +16,9 @@ import {
   activities,
   projectTodos,
   internalMessages,
+  costCategories,
+  costItems,
+  costHistory,
   type User,
   type UpsertUser,
   type Company,
@@ -48,6 +51,12 @@ import {
   type InsertProjectTodo,
   type InternalMessage,
   type InsertInternalMessage,
+  type CostCategory,
+  type InsertCostCategory,
+  type CostItem,
+  type InsertCostItem,
+  type CostHistory,
+  type InsertCostHistory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, like, count } from "drizzle-orm";
@@ -158,6 +167,22 @@ export interface IStorage {
   getInternalMessages(recipientId: string): Promise<InternalMessage[]>;
   createInternalMessage(message: InsertInternalMessage): Promise<InternalMessage>;
   markMessageAsRead(messageId: number): Promise<void>;
+
+  // Cost Management operations
+  getCostCategories(): Promise<CostCategory[]>;
+  getCostCategory(id: number): Promise<CostCategory | undefined>;
+  createCostCategory(category: InsertCostCategory): Promise<CostCategory>;
+  updateCostCategory(id: number, updates: Partial<InsertCostCategory>): Promise<CostCategory>;
+  deleteCostCategory(id: number): Promise<void>;
+
+  getCostItems(categoryId?: number): Promise<CostItem[]>;
+  getCostItem(id: number): Promise<CostItem | undefined>;
+  createCostItem(item: InsertCostItem): Promise<CostItem>;
+  updateCostItem(id: number, updates: Partial<InsertCostItem>): Promise<CostItem>;
+  deleteCostItem(id: number): Promise<void>;
+
+  getCostHistory(costItemId: number): Promise<CostHistory[]>;
+  createCostHistory(history: InsertCostHistory): Promise<CostHistory>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -685,6 +710,122 @@ export class DatabaseStorage implements IStorage {
       .update(internalMessages)
       .set({ read: true })
       .where(eq(internalMessages.id, messageId));
+  }
+
+  // Cost Management operations
+  async getCostCategories(): Promise<CostCategory[]> {
+    return await db
+      .select()
+      .from(costCategories)
+      .where(eq(costCategories.isActive, true))
+      .orderBy(costCategories.sortOrder, costCategories.name);
+  }
+
+  async getCostCategory(id: number): Promise<CostCategory | undefined> {
+    const [category] = await db
+      .select()
+      .from(costCategories)
+      .where(eq(costCategories.id, id));
+    return category;
+  }
+
+  async createCostCategory(category: InsertCostCategory): Promise<CostCategory> {
+    const [newCategory] = await db
+      .insert(costCategories)
+      .values(category)
+      .returning();
+    return newCategory;
+  }
+
+  async updateCostCategory(id: number, updates: Partial<InsertCostCategory>): Promise<CostCategory> {
+    const [updatedCategory] = await db
+      .update(costCategories)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(costCategories.id, id))
+      .returning();
+    return updatedCategory;
+  }
+
+  async deleteCostCategory(id: number): Promise<void> {
+    await db
+      .update(costCategories)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(costCategories.id, id));
+  }
+
+  async getCostItems(categoryId?: number): Promise<CostItem[]> {
+    const query = db
+      .select()
+      .from(costItems)
+      .where(eq(costItems.isActive, true));
+
+    if (categoryId) {
+      query.where(and(eq(costItems.isActive, true), eq(costItems.categoryId, categoryId)));
+    }
+
+    return await query.orderBy(costItems.name);
+  }
+
+  async getCostItem(id: number): Promise<CostItem | undefined> {
+    const [item] = await db
+      .select()
+      .from(costItems)
+      .where(eq(costItems.id, id));
+    return item;
+  }
+
+  async createCostItem(item: InsertCostItem): Promise<CostItem> {
+    const [newItem] = await db
+      .insert(costItems)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async updateCostItem(id: number, updates: Partial<InsertCostItem>): Promise<CostItem> {
+    // If cost is being updated, create history entry
+    if (updates.costPerUnit) {
+      const existingItem = await this.getCostItem(id);
+      if (existingItem && existingItem.costPerUnit !== updates.costPerUnit.toString()) {
+        await this.createCostHistory({
+          costItemId: id,
+          previousCost: existingItem.costPerUnit,
+          newCost: updates.costPerUnit.toString(),
+          changeReason: "Price update",
+          changedBy: "system", // This would be the actual user ID in a real implementation
+        });
+      }
+    }
+
+    const [updatedItem] = await db
+      .update(costItems)
+      .set({ ...updates, updatedAt: new Date(), lastUpdated: new Date() })
+      .where(eq(costItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteCostItem(id: number): Promise<void> {
+    await db
+      .update(costItems)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(costItems.id, id));
+  }
+
+  async getCostHistory(costItemId: number): Promise<CostHistory[]> {
+    return await db
+      .select()
+      .from(costHistory)
+      .where(eq(costHistory.costItemId, costItemId))
+      .orderBy(desc(costHistory.changedAt));
+  }
+
+  async createCostHistory(history: InsertCostHistory): Promise<CostHistory> {
+    const [newHistory] = await db
+      .insert(costHistory)
+      .values(history)
+      .returning();
+    return newHistory;
   }
 }
 
