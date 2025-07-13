@@ -214,6 +214,26 @@ export default function Costs() {
     setTierList(tierList.filter((_, i) => i !== index));
   };
 
+  const handleEditItem = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedItem) return;
+    
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    
+    const itemData: Partial<InsertCostItem> = {
+      name: formData.get("name") as string,
+      description: formData.get("description") as string || null,
+      unitType: formData.get("unitType") as string,
+      costPerUnit: useTieredPricing ? null : (formData.get("costPerUnit") as string),
+      supplierName: formData.get("supplierName") as string || null,
+      supplierContact: formData.get("supplierContact") as string || null,
+      notes: formData.get("notes") as string || null,
+    };
+
+    updateItemMutation.mutate({ id: selectedItem.id, updates: itemData });
+  };
+
   const initializeDefaultCategories = async () => {
     for (const category of DEFAULT_CATEGORIES) {
       await createCategoryMutation.mutateAsync({
@@ -605,16 +625,136 @@ export default function Costs() {
                               </div>
 
                               <div className="flex gap-2 ml-4">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedItem(item);
-                                    setIsEditingItem(true);
+                                <Dialog 
+                                  open={isEditingItem && selectedItem?.id === item.id} 
+                                  onOpenChange={(open) => {
+                                    if (!open) {
+                                      setIsEditingItem(false);
+                                      setSelectedItem(null);
+                                      setUseTieredPricing(false);
+                                      setTierList([]);
+                                    }
                                   }}
                                 >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setSelectedItem(item);
+                                        setIsEditingItem(true);
+                                        setUseTieredPricing(!!item.hasTieredPricing);
+                                      }}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Edit Cost Item: {item.name}</DialogTitle>
+                                    </DialogHeader>
+                                    <form onSubmit={handleEditItem} className="space-y-4">
+                                      <div>
+                                        <Label htmlFor="editName">Item Name</Label>
+                                        <Input 
+                                          id="editName" 
+                                          name="name" 
+                                          defaultValue={item.name}
+                                          placeholder="e.g., Excavation per cubic yard" 
+                                          required 
+                                        />
+                                      </div>
+
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                          <Label htmlFor="editUnitType">Unit Type</Label>
+                                          <Select name="unitType" defaultValue={item.unitType}>
+                                            <SelectTrigger>
+                                              <SelectValue placeholder="Select unit type" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              {UNIT_TYPES.map((unit) => (
+                                                <SelectItem key={unit.value} value={unit.value}>
+                                                  {unit.label}
+                                                </SelectItem>
+                                              ))}
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                        <div>
+                                          <Label htmlFor="editSupplierName">Supplier Name</Label>
+                                          <Input 
+                                            id="editSupplierName" 
+                                            name="supplierName" 
+                                            defaultValue={item.supplierName || ""}
+                                            placeholder="e.g., ABC Materials" 
+                                          />
+                                        </div>
+                                      </div>
+
+                                      {!useTieredPricing && (
+                                        <div>
+                                          <Label htmlFor="editCostPerUnit">Cost Per Unit ($)</Label>
+                                          <Input 
+                                            id="editCostPerUnit" 
+                                            name="costPerUnit" 
+                                            type="number" 
+                                            step="0.01" 
+                                            defaultValue={item.costPerUnit || ""}
+                                            placeholder="0.00" 
+                                            required={!useTieredPricing}
+                                          />
+                                        </div>
+                                      )}
+
+                                      <div>
+                                        <Label htmlFor="editSupplierContact">Supplier Contact</Label>
+                                        <Input 
+                                          id="editSupplierContact" 
+                                          name="supplierContact" 
+                                          defaultValue={item.supplierContact || ""}
+                                          placeholder="Phone, email, or website" 
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <Label htmlFor="editDescription">Description</Label>
+                                        <Textarea 
+                                          id="editDescription" 
+                                          name="description" 
+                                          defaultValue={item.description || ""}
+                                          placeholder="Additional details about this cost item" 
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <Label htmlFor="editNotes">Notes</Label>
+                                        <Textarea 
+                                          id="editNotes" 
+                                          name="notes" 
+                                          defaultValue={item.notes || ""}
+                                          placeholder="Any special notes or considerations" 
+                                        />
+                                      </div>
+
+                                      <div className="flex justify-end gap-2">
+                                        <Button 
+                                          type="button" 
+                                          variant="outline" 
+                                          onClick={() => {
+                                            setIsEditingItem(false);
+                                            setSelectedItem(null);
+                                          }}
+                                        >
+                                          Cancel
+                                        </Button>
+                                        <Button type="submit" disabled={updateItemMutation.isPending}>
+                                          {updateItemMutation.isPending ? "Updating..." : "Update Item"}
+                                        </Button>
+                                      </div>
+                                    </form>
+                                  </DialogContent>
+                                </Dialog>
                                 <Button
                                   size="sm"
                                   variant="outline"
