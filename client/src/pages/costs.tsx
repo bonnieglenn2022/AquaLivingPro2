@@ -162,6 +162,35 @@ export default function Costs() {
     },
   });
 
+  const deleteItemMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/cost-items/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cost-items"] });
+      toast({
+        title: "Cost Item Deleted",
+        description: "Cost item has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => window.location.href = "/api/login", 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: `Failed to delete cost item: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateCategory = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -388,7 +417,7 @@ export default function Costs() {
                             Add Item
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
+                        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                           <DialogHeader>
                             <DialogTitle>Add Cost Item to {selectedCategory.name}</DialogTitle>
                           </DialogHeader>
@@ -649,7 +678,7 @@ export default function Costs() {
                                       <Pencil className="h-4 w-4" />
                                     </Button>
                                   </DialogTrigger>
-                                  <DialogContent className="max-w-2xl">
+                                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                                     <DialogHeader>
                                       <DialogTitle>Edit Cost Item: {item.name}</DialogTitle>
                                     </DialogHeader>
@@ -767,6 +796,19 @@ export default function Costs() {
                                   }}
                                 >
                                   <History className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    if (confirm(`Are you sure you want to delete "${item.name}"? This action cannot be undone.`)) {
+                                      deleteItemMutation.mutate(item.id);
+                                    }
+                                  }}
+                                  disabled={deleteItemMutation.isPending}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
