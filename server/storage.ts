@@ -8,6 +8,8 @@ import {
   estimates,
   estimateItems,
   vendors,
+  suppliers,
+  subcontractors,
   tasks,
   equipment,
   projectEquipment,
@@ -50,6 +52,10 @@ import {
   type InsertEstimateItem,
   type Vendor,
   type InsertVendor,
+  type Supplier,
+  type InsertSupplier,
+  type Subcontractor,
+  type InsertSubcontractor,
   type Task,
   type InsertTask,
   type Equipment,
@@ -1508,6 +1514,88 @@ export class DatabaseStorage implements IStorage {
     await this.updateProject(projectId, { actualCost: totalCosts.toString() });
     
     return totalCosts;
+  }
+
+  // Supplier operations
+  async getSuppliers(companyId: number): Promise<Supplier[]> {
+    return await db
+      .select()
+      .from(suppliers)
+      .where(and(eq(suppliers.companyId, companyId), eq(suppliers.isActive, true)))
+      .orderBy(suppliers.name);
+  }
+
+  async getSupplier(id: number): Promise<Supplier | undefined> {
+    const [supplier] = await db
+      .select()
+      .from(suppliers)
+      .where(eq(suppliers.id, id));
+    return supplier;
+  }
+
+  async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
+    const [newSupplier] = await db
+      .insert(suppliers)
+      .values(supplier)
+      .returning();
+    return newSupplier;
+  }
+
+  async updateSupplier(id: number, updates: Partial<InsertSupplier>): Promise<Supplier> {
+    const [updatedSupplier] = await db
+      .update(suppliers)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(suppliers.id, id))
+      .returning();
+    return updatedSupplier;
+  }
+
+  async deleteSupplier(id: number): Promise<void> {
+    await db
+      .update(suppliers)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(suppliers.id, id));
+  }
+
+  // Subcontractor operations
+  async getSubcontractors(companyId: number): Promise<Subcontractor[]> {
+    return await db
+      .select()
+      .from(subcontractors)
+      .where(and(eq(subcontractors.companyId, companyId), eq(subcontractors.isActive, true)))
+      .orderBy(subcontractors.name);
+  }
+
+  async getSubcontractor(id: number): Promise<Subcontractor | undefined> {
+    const [subcontractor] = await db
+      .select()
+      .from(subcontractors)
+      .where(eq(subcontractors.id, id));
+    return subcontractor;
+  }
+
+  async createSubcontractor(subcontractor: InsertSubcontractor): Promise<Subcontractor> {
+    const [newSubcontractor] = await db
+      .insert(subcontractors)
+      .values(subcontractor)
+      .returning();
+    return newSubcontractor;
+  }
+
+  async updateSubcontractor(id: number, updates: Partial<InsertSubcontractor>): Promise<Subcontractor> {
+    const [updatedSubcontractor] = await db
+      .update(subcontractors)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(subcontractors.id, id))
+      .returning();
+    return updatedSubcontractor;
+  }
+
+  async deleteSubcontractor(id: number): Promise<void> {
+    await db
+      .update(subcontractors)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(subcontractors.id, id));
   }
 }
 

@@ -194,6 +194,47 @@ export const vendors = pgTable("vendors", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Suppliers table (for material suppliers)
+export const suppliers = pgTable("suppliers", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
+  name: varchar("name", { length: 100 }).notNull(),
+  contactName: varchar("contact_name", { length: 100 }),
+  email: varchar("email", { length: 100 }),
+  phone: varchar("phone", { length: 20 }),
+  address: text("address"),
+  city: varchar("city", { length: 50 }),
+  state: varchar("state", { length: 10 }),
+  zipCode: varchar("zip_code", { length: 10 }),
+  website: varchar("website", { length: 200 }),
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Subcontractors table
+export const subcontractors = pgTable("subcontractors", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id),
+  name: varchar("name", { length: 100 }).notNull(),
+  contactName: varchar("contact_name", { length: 100 }),
+  email: varchar("email", { length: 100 }),
+  phone: varchar("phone", { length: 20 }),
+  address: text("address"),
+  city: varchar("city", { length: 50 }),
+  state: varchar("state", { length: 10 }),
+  zipCode: varchar("zip_code", { length: 10 }),
+  licenseNumber: varchar("license_number", { length: 50 }),
+  insuranceExpiry: timestamp("insurance_expiry"),
+  specialty: varchar("specialty", { length: 100 }), // excavation, plumbing, electrical, concrete, etc.
+  rating: integer("rating"), // 1-5 star rating
+  notes: text("notes"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Tasks table
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
@@ -1033,6 +1074,18 @@ export const insertProjectBidItemSchema = createInsertSchema(projectBidItems).om
   updatedAt: true,
 });
 
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertSubcontractorSchema = createInsertSchema(subcontractors).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -1103,3 +1156,7 @@ export type PaymentRecord = typeof paymentRecords.$inferSelect;
 export type InsertPaymentRecord = z.infer<typeof insertPaymentRecordSchema>;
 export type ProjectBidItem = typeof projectBidItems.$inferSelect;
 export type InsertProjectBidItem = z.infer<typeof insertProjectBidItemSchema>;
+export type Supplier = typeof suppliers.$inferSelect;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type Subcontractor = typeof subcontractors.$inferSelect;
+export type InsertSubcontractor = z.infer<typeof insertSubcontractorSchema>;

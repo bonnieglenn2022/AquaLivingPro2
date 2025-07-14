@@ -30,7 +30,9 @@ import {
   insertCustomerInvoiceSchema,
   insertCustomerInvoiceItemSchema,
   insertPaymentRecordSchema,
-  insertProjectBidItemSchema
+  insertProjectBidItemSchema,
+  insertSupplierSchema,
+  insertSubcontractorSchema
 } from "@shared/schema";
 
 // Utility function to generate company codes
@@ -805,6 +807,128 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating vendor:", error);
       res.status(500).json({ message: "Failed to create vendor" });
+    }
+  });
+
+  // Supplier routes
+  app.get('/api/suppliers', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+      const suppliers = await storage.getSuppliers(company.id);
+      res.json(suppliers);
+    } catch (error) {
+      console.error("Error fetching suppliers:", error);
+      res.status(500).json({ message: "Failed to fetch suppliers" });
+    }
+  });
+
+  app.post('/api/suppliers', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+      const supplierData = insertSupplierSchema.parse({ ...req.body, companyId: company.id });
+      const supplier = await storage.createSupplier(supplierData);
+      res.status(201).json(supplier);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid supplier data", errors: error.errors });
+      }
+      console.error("Error creating supplier:", error);
+      res.status(500).json({ message: "Failed to create supplier" });
+    }
+  });
+
+  app.put('/api/suppliers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = insertSupplierSchema.partial().parse(req.body);
+      const supplier = await storage.updateSupplier(id, updates);
+      res.json(supplier);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid supplier data", errors: error.errors });
+      }
+      console.error("Error updating supplier:", error);
+      res.status(500).json({ message: "Failed to update supplier" });
+    }
+  });
+
+  app.delete('/api/suppliers/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteSupplier(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting supplier:", error);
+      res.status(500).json({ message: "Failed to delete supplier" });
+    }
+  });
+
+  // Subcontractor routes
+  app.get('/api/subcontractors', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+      const subcontractors = await storage.getSubcontractors(company.id);
+      res.json(subcontractors);
+    } catch (error) {
+      console.error("Error fetching subcontractors:", error);
+      res.status(500).json({ message: "Failed to fetch subcontractors" });
+    }
+  });
+
+  app.post('/api/subcontractors', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+      const subcontractorData = insertSubcontractorSchema.parse({ ...req.body, companyId: company.id });
+      const subcontractor = await storage.createSubcontractor(subcontractorData);
+      res.status(201).json(subcontractor);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid subcontractor data", errors: error.errors });
+      }
+      console.error("Error creating subcontractor:", error);
+      res.status(500).json({ message: "Failed to create subcontractor" });
+    }
+  });
+
+  app.put('/api/subcontractors/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = insertSubcontractorSchema.partial().parse(req.body);
+      const subcontractor = await storage.updateSubcontractor(id, updates);
+      res.json(subcontractor);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid subcontractor data", errors: error.errors });
+      }
+      console.error("Error updating subcontractor:", error);
+      res.status(500).json({ message: "Failed to update subcontractor" });
+    }
+  });
+
+  app.delete('/api/subcontractors/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteSubcontractor(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting subcontractor:", error);
+      res.status(500).json({ message: "Failed to delete subcontractor" });
     }
   });
 

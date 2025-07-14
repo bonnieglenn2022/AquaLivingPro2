@@ -18,6 +18,8 @@ import Vendors from "@/pages/vendors";
 import Reports from "@/pages/reports";
 import CostCatalog from "@/pages/cost-catalog";
 import Finances from "@/pages/finances";
+import Suppliers from "@/pages/suppliers";
+import Subcontractors from "@/pages/subcontractors";
 
 function Router() {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -62,6 +64,8 @@ function Router() {
           <Route path="/reports" component={Reports} />
           <Route path="/cost-catalog" component={CostCatalog} />
           <Route path="/finances" component={Finances} />
+          <Route path="/suppliers" component={Suppliers} />
+          <Route path="/subcontractors" component={Subcontractors} />
         </>
       )}
       <Route component={NotFound} />

@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { CostCategory, CostItem, InsertCostCategory, InsertCostItem } from "@shared/schema";
+import type { CostCategory, CostItem, InsertCostCategory, InsertCostItem, Supplier, Subcontractor } from "@shared/schema";
 
 export default function CostCatalog() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,6 +31,14 @@ export default function CostCatalog() {
 
   const { data: costItems = [], isLoading: itemsLoading } = useQuery<CostItem[]>({
     queryKey: ["/api/cost-items"],
+  });
+
+  const { data: suppliers = [] } = useQuery<Supplier[]>({
+    queryKey: ["/api/suppliers"],
+  });
+
+  const { data: subcontractors = [] } = useQuery<Subcontractor[]>({
+    queryKey: ["/api/subcontractors"],
   });
 
   const createCategoryMutation = useMutation({
@@ -286,18 +294,48 @@ export default function CostCatalog() {
                         </div>
                         <div>
                           <Label htmlFor="supplierName">Supplier</Label>
-                          <Input id="supplierName" name="supplierName" defaultValue={editingItem?.supplierName || ""} />
+                          <Select name="supplierName" defaultValue={editingItem?.supplierName || ""}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select supplier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">No Supplier</SelectItem>
+                              {suppliers.map((supplier) => (
+                                <SelectItem key={supplier.id} value={supplier.name}>
+                                  {supplier.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
 
-                      <div>
-                        <Label htmlFor="supplierContact">Supplier Contact</Label>
-                        <Input 
-                          id="supplierContact" 
-                          name="supplierContact" 
-                          placeholder="Phone, email, or website"
-                          defaultValue={editingItem?.supplierContact || ""} 
-                        />
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="supplierContact">Supplier Contact</Label>
+                          <Input 
+                            id="supplierContact" 
+                            name="supplierContact" 
+                            placeholder="Phone, email, or website"
+                            defaultValue={editingItem?.supplierContact || ""} 
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="subcontractorName">Subcontractor</Label>
+                          <Select name="subcontractorName" defaultValue={editingItem?.subcontractorName || ""}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select subcontractor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">No Subcontractor</SelectItem>
+                              {subcontractors.map((subcontractor) => (
+                                <SelectItem key={subcontractor.id} value={subcontractor.name}>
+                                  {subcontractor.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       <div>
@@ -430,6 +468,7 @@ export default function CostCatalog() {
                                 <TableHead>Unit Type</TableHead>
                                 <TableHead>Cost/Unit</TableHead>
                                 <TableHead>Supplier</TableHead>
+                                <TableHead>Subcontractor</TableHead>
                                 <TableHead>Type</TableHead>
                                 <TableHead>Code</TableHead>
                                 <TableHead>Actions</TableHead>
@@ -443,6 +482,7 @@ export default function CostCatalog() {
                                   <TableCell>{item.unitType}</TableCell>
                                   <TableCell>${parseFloat(item.costPerUnit).toFixed(2)}</TableCell>
                                   <TableCell>{item.supplierName || '-'}</TableCell>
+                                  <TableCell>{item.subcontractorName || '-'}</TableCell>
                                   <TableCell>{item.type || '-'}</TableCell>
                                   <TableCell>{item.accountingCode && item.accountingCode !== 'none' ? item.accountingCode : '-'}</TableCell>
                                   <TableCell>
