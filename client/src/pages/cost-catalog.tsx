@@ -125,9 +125,12 @@ export default function CostCatalog() {
       description: formData.description as string,
       unitType: formData.unitType as string,
       costPerUnit: formData.costPerUnit as string,
-      supplierName: formData.supplierName as string,
+      supplierName: formData.supplierName === "none" ? null : (formData.supplierName as string),
       supplierContact: formData.supplierContact as string,
+      subcontractorName: formData.subcontractorName === "none" ? null : (formData.subcontractorName as string),
       notes: formData.notes as string,
+      type: formData.type as string,
+      accountingCode: formData.accountingCode === "none" ? null : (formData.accountingCode as string),
     };
 
     if (editingItem) {
@@ -299,7 +302,7 @@ export default function CostCatalog() {
                               <SelectValue placeholder="Select supplier" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No Supplier</SelectItem>
+                              <SelectItem value="none">No Supplier</SelectItem>
                               {suppliers.map((supplier) => (
                                 <SelectItem key={supplier.id} value={supplier.name}>
                                   {supplier.name}
@@ -327,7 +330,7 @@ export default function CostCatalog() {
                               <SelectValue placeholder="Select subcontractor" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No Subcontractor</SelectItem>
+                              <SelectItem value="none">No Subcontractor</SelectItem>
                               {subcontractors.map((subcontractor) => (
                                 <SelectItem key={subcontractor.id} value={subcontractor.name}>
                                   {subcontractor.name}
@@ -481,8 +484,8 @@ export default function CostCatalog() {
                                   <TableCell>{item.description}</TableCell>
                                   <TableCell>{item.unitType}</TableCell>
                                   <TableCell>${parseFloat(item.costPerUnit).toFixed(2)}</TableCell>
-                                  <TableCell>{item.supplierName || '-'}</TableCell>
-                                  <TableCell>{item.subcontractorName || '-'}</TableCell>
+                                  <TableCell>{item.supplierName && item.supplierName !== "none" ? item.supplierName : '-'}</TableCell>
+                                  <TableCell>{item.subcontractorName && item.subcontractorName !== "none" ? item.subcontractorName : '-'}</TableCell>
                                   <TableCell>{item.type || '-'}</TableCell>
                                   <TableCell>{item.accountingCode && item.accountingCode !== 'none' ? item.accountingCode : '-'}</TableCell>
                                   <TableCell>
