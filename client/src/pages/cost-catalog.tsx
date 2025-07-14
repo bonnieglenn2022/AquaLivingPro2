@@ -286,7 +286,18 @@ export default function CostCatalog() {
                         </div>
                         <div>
                           <Label htmlFor="supplierName">Supplier</Label>
-                          <Input id="supplierName" name="supplierName" defaultValue={editingItem?.supplierName || ""} />
+                          <Select name="supplierName" defaultValue={editingItem?.supplierName || ""}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select supplier type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Labor">Labor</SelectItem>
+                              <SelectItem value="Materials">Materials</SelectItem>
+                              <SelectItem value="Subcontractor">Subcontractor</SelectItem>
+                              <SelectItem value="Administrative">Administrative</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
 
@@ -372,7 +383,7 @@ export default function CostCatalog() {
                                 <TableHead>Description</TableHead>
                                 <TableHead>Unit Type</TableHead>
                                 <TableHead>Cost/Unit</TableHead>
-                                <TableHead>Supplier</TableHead>
+                                <TableHead>Supplier Type</TableHead>
                                 <TableHead>Actions</TableHead>
                               </TableRow>
                             </TableHeader>
