@@ -286,18 +286,7 @@ export default function CostCatalog() {
                         </div>
                         <div>
                           <Label htmlFor="supplierName">Supplier</Label>
-                          <Select name="supplierName" defaultValue={editingItem?.supplierName || ""}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select supplier type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Labor">Labor</SelectItem>
-                              <SelectItem value="Materials">Materials</SelectItem>
-                              <SelectItem value="Subcontractor">Subcontractor</SelectItem>
-                              <SelectItem value="Administrative">Administrative</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <Input id="supplierName" name="supplierName" defaultValue={editingItem?.supplierName || ""} />
                         </div>
                       </div>
 
@@ -319,6 +308,63 @@ export default function CostCatalog() {
                           placeholder="Additional notes, specifications, etc."
                           defaultValue={editingItem?.notes || ""} 
                         />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="type">Type</Label>
+                          <Select name="type" defaultValue={editingItem?.type || ""}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Labor">Labor</SelectItem>
+                              <SelectItem value="Material">Material</SelectItem>
+                              <SelectItem value="Subcontractor">Subcontractor</SelectItem>
+                              <SelectItem value="Equipment">Equipment</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="accountingCode">Accounting Code (Optional)</Label>
+                          <Select name="accountingCode" defaultValue={editingItem?.accountingCode || ""}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select code" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Code</SelectItem>
+                              <SelectItem value="01-00">01-00 - Administrative</SelectItem>
+                              <SelectItem value="01-10">01-10 - Consulting Fees</SelectItem>
+                              <SelectItem value="02-00">02-00 - Site Work</SelectItem>
+                              <SelectItem value="02-10">02-10 - Excavation</SelectItem>
+                              <SelectItem value="02-20">02-20 - Grading</SelectItem>
+                              <SelectItem value="03-00">03-00 - Concrete</SelectItem>
+                              <SelectItem value="03-10">03-10 - Footings</SelectItem>
+                              <SelectItem value="03-20">03-20 - Foundations</SelectItem>
+                              <SelectItem value="03-30">03-30 - Slabs</SelectItem>
+                              <SelectItem value="04-00">04-00 - Masonry</SelectItem>
+                              <SelectItem value="05-00">05-00 - Steel</SelectItem>
+                              <SelectItem value="06-00">06-00 - Wood & Plastics</SelectItem>
+                              <SelectItem value="06-10">06-10 - Rough Carpentry</SelectItem>
+                              <SelectItem value="06-20">06-20 - Finish Carpentry</SelectItem>
+                              <SelectItem value="07-00">07-00 - Thermal & Moisture Protection</SelectItem>
+                              <SelectItem value="07-10">07-10 - Waterproofing</SelectItem>
+                              <SelectItem value="07-20">07-20 - Insulation</SelectItem>
+                              <SelectItem value="07-30">07-30 - Roofing</SelectItem>
+                              <SelectItem value="08-00">08-00 - Openings</SelectItem>
+                              <SelectItem value="08-10">08-10 - Doors</SelectItem>
+                              <SelectItem value="08-20">08-20 - Windows</SelectItem>
+                              <SelectItem value="09-00">09-00 - Finishes</SelectItem>
+                              <SelectItem value="09-10">09-10 - Flooring</SelectItem>
+                              <SelectItem value="09-20">09-20 - Drywall</SelectItem>
+                              <SelectItem value="09-30">09-30 - Painting</SelectItem>
+                              <SelectItem value="15-00">15-00 - Mechanical</SelectItem>
+                              <SelectItem value="15-10">15-10 - Plumbing</SelectItem>
+                              <SelectItem value="15-20">15-20 - HVAC</SelectItem>
+                              <SelectItem value="16-00">16-00 - Electrical</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       <div className="flex justify-end gap-2">
@@ -383,7 +429,9 @@ export default function CostCatalog() {
                                 <TableHead>Description</TableHead>
                                 <TableHead>Unit Type</TableHead>
                                 <TableHead>Cost/Unit</TableHead>
-                                <TableHead>Supplier Type</TableHead>
+                                <TableHead>Supplier</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Code</TableHead>
                                 <TableHead>Actions</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -395,6 +443,8 @@ export default function CostCatalog() {
                                   <TableCell>{item.unitType}</TableCell>
                                   <TableCell>${parseFloat(item.costPerUnit).toFixed(2)}</TableCell>
                                   <TableCell>{item.supplierName || '-'}</TableCell>
+                                  <TableCell>{item.type || '-'}</TableCell>
+                                  <TableCell>{item.accountingCode && item.accountingCode !== 'none' ? item.accountingCode : '-'}</TableCell>
                                   <TableCell>
                                     <div className="flex gap-2">
                                       <Button

@@ -316,6 +316,8 @@ export const costItems = pgTable("cost_items", {
   hasTieredPricing: boolean("has_tiered_pricing").default(false),
   supplierName: varchar("supplier_name", { length: 100 }),
   supplierContact: varchar("supplier_contact", { length: 100 }),
+  type: varchar("type", { length: 50 }), // Labor, Material, Subcontractor, Equipment
+  accountingCode: varchar("accounting_code", { length: 20 }), // 01-00, 02-10, etc.
   notes: text("notes"),
   lastUpdated: timestamp("last_updated").defaultNow(),
   isActive: boolean("is_active").default(true),
