@@ -810,6 +810,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put('/api/vendors/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = insertVendorSchema.partial().parse(req.body);
+      const vendor = await storage.updateVendor(id, updates);
+      res.json(vendor);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid vendor data", errors: error.errors });
+      }
+      console.error("Error updating vendor:", error);
+      res.status(500).json({ message: "Failed to update vendor" });
+    }
+  });
+
+  app.delete('/api/vendors/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteVendor(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting vendor:", error);
+      res.status(500).json({ message: "Failed to delete vendor" });
+    }
+  });
+
   // Supplier routes
   app.get('/api/suppliers', isAuthenticated, async (req: any, res) => {
     try {
