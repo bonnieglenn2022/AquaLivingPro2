@@ -23,7 +23,7 @@ const navItems = [
   { path: "/scheduling", icon: Calendar, label: "Scheduling" },
   { path: "/documents", icon: FileText, label: "Documents" },
   { path: "/vendors", icon: Truck, label: "Vendors" },
-  { path: "/costs", icon: DollarSign, label: "Cost Management" },
+  { path: "/cost-catalog", icon: DollarSign, label: "Cost Catalog" },
   { path: "/finances", icon: CreditCard, label: "Job Finances" },
   { path: "/reports", icon: BarChart3, label: "Reports" },
 ];

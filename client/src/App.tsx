@@ -16,7 +16,7 @@ import Scheduling from "@/pages/scheduling";
 import Documents from "@/pages/documents";
 import Vendors from "@/pages/vendors";
 import Reports from "@/pages/reports";
-import Costs from "@/pages/costs";
+import CostCatalog from "@/pages/cost-catalog";
 import Finances from "@/pages/finances";
 
 function Router() {
@@ -60,7 +60,7 @@ function Router() {
           <Route path="/documents" component={Documents} />
           <Route path="/vendors" component={Vendors} />
           <Route path="/reports" component={Reports} />
-          <Route path="/costs" component={Costs} />
+          <Route path="/cost-catalog" component={CostCatalog} />
           <Route path="/finances" component={Finances} />
         </>
       )}

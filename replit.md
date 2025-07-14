@@ -13,20 +13,24 @@ Single vCard import functionality: User prefers importing individual contacts fr
 
 ## Recent Changes
 
+**Cost Catalog System Implementation** (January 14, 2025)
+- Replaced cost management page with comprehensive JobTread-style Cost Catalog
+- Created centralized cost management system with categories and items organization
+- Added search and filtering capabilities across all cost items
+- Built complete CRUD operations for cost categories and items with supplier information
+- Integrated table-based display with edit/delete functionality
+- Updated navigation from "Cost Management" to "Cost Catalog" for cleaner user experience
+- Enhanced UI with tabs for items vs categories management
+- Prepared foundation for project bidding integration with centralized cost database
+
 **Financial Management System Implementation** (January 13, 2025)
 - Implemented complete JobTread-style financial management system
 - Added database schema for project budgets, budget items, purchase orders, work orders, vendor bills, customer invoices, and payment records
 - Created comprehensive storage layer with full CRUD operations for all financial entities
 - Built multi-tenant architecture ensuring complete data isolation between companies
 - Established proper database relationships linking financial documents to projects and cost items
+- Added Project Bid and Project Costs tabs to finances page with 7-column layout
 - Ready for frontend implementation of budgeting, job costing, and financial tracking features
-
-**Cost Management System Completed** (January 13, 2025)
-- Built comprehensive cost management with categories (excavation, rebar, gunite, plaster, equipment, plumbing, electrical, permitting)
-- Implemented multi-tenant database structure with company-specific data isolation
-- Created cost items tracking with supplier information, pricing history, and unit types
-- Added frontend interface for managing cost categories and items
-- Fixed data fetching and caching issues for real-time cost item display
 
 ## System Architecture
 
