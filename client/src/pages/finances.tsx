@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { ProjectBid } from "@/components/project-bid";
+import { ProjectCosts } from "@/components/project-costs";
 
 interface Project {
   id: number;
@@ -282,8 +284,10 @@ export default function Finances() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="budgets" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="budgets">Budgets</TabsTrigger>
+          <TabsTrigger value="bid">Project Bid</TabsTrigger>
+          <TabsTrigger value="costs">Project Costs</TabsTrigger>
           <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
           <TabsTrigger value="work-orders">Work Orders</TabsTrigger>
           <TabsTrigger value="vendor-bills">Vendor Bills</TabsTrigger>
@@ -343,6 +347,16 @@ export default function Finances() {
               ))
             )}
           </div>
+        </TabsContent>
+
+        {/* Project Bid Tab */}
+        <TabsContent value="bid" className="space-y-4">
+          <ProjectBid projectId={selectedProject!} />
+        </TabsContent>
+
+        {/* Project Costs Tab */}
+        <TabsContent value="costs" className="space-y-4">
+          <ProjectCosts projectId={selectedProject!} />
         </TabsContent>
 
         {/* Purchase Orders Tab */}

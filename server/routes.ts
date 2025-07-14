@@ -29,7 +29,8 @@ import {
   insertVendorBillItemSchema,
   insertCustomerInvoiceSchema,
   insertCustomerInvoiceItemSchema,
-  insertPaymentRecordSchema
+  insertPaymentRecordSchema,
+  insertProjectBidItemSchema
 } from "@shared/schema";
 
 // Utility function to generate company codes
@@ -1473,6 +1474,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting payment record:", error);
       res.status(500).json({ message: "Failed to delete payment record" });
+    }
+  });
+
+  // Project Bid Items routes
+  app.get("/api/projects/:projectId/bid-items", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const bidItems = await storage.getProjectBidItems(projectId);
+      res.json(bidItems);
+    } catch (error) {
+      console.error("Error fetching project bid items:", error);
+      res.status(500).json({ message: "Failed to fetch project bid items" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/bid-items", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const validatedData = insertProjectBidItemSchema.parse({
+        ...req.body,
+        projectId,
+        companyId: company.id,
+      });
+      const bidItem = await storage.createProjectBidItem(validatedData);
+      res.json(bidItem);
+    } catch (error) {
+      console.error("Error creating project bid item:", error);
+      res.status(500).json({ message: "Failed to create project bid item" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/bid-from-costs", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+
+      const { bidItems } = req.body; // Array of { costItemId, quantity, markupPercentage }
+      
+      const createdItems = await storage.createProjectBidFromCostItems(projectId, company.id, bidItems);
+      res.json(createdItems);
+    } catch (error) {
+      console.error("Error creating bid from cost items:", error);
+      res.status(500).json({ message: "Failed to create bid from cost items" });
+    }
+  });
+
+  app.patch("/api/bid-items/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      const bidItem = await storage.updateProjectBidItem(id, updates);
+      res.json(bidItem);
+    } catch (error) {
+      console.error("Error updating project bid item:", error);
+      res.status(500).json({ message: "Failed to update project bid item" });
+    }
+  });
+
+  app.delete("/api/bid-items/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProjectBidItem(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting project bid item:", error);
+      res.status(500).json({ message: "Failed to delete project bid item" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/calculate-actual-costs", isAuthenticated, async (req: any, res) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const actualCosts = await storage.calculateProjectActualCosts(projectId);
+      res.json({ actualCosts });
+    } catch (error) {
+      console.error("Error calculating actual costs:", error);
+      res.status(500).json({ message: "Failed to calculate actual costs" });
     }
   });
 

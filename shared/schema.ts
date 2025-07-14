@@ -119,6 +119,7 @@ export const projects = pgTable("projects", {
   types: text("types").array().notNull().default(["pool_spa"]), // pool_spa, pool_only, decking, patio_cover, pergola, outdoor_kitchen, driveway
   status: text("status").notNull().default("planning"), // planning, excavation, plumbing, electrical, gunite, finishing, completed, on_hold
   budget: decimal("budget", { precision: 10, scale: 2 }),
+  bidAmount: decimal("bid_amount", { precision: 10, scale: 2 }),
   actualCost: decimal("actual_cost", { precision: 10, scale: 2 }).default("0"),
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
@@ -547,6 +548,26 @@ export const paymentRecords = pgTable("payment_records", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Project Bid Items table (stores detailed bid breakdown built from cost items)
+export const projectBidItems = pgTable("project_bid_items", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id").notNull(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+  categoryId: integer("category_id").notNull().references(() => costCategories.id),
+  costItemId: integer("cost_item_id").references(() => costItems.id),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull().default("1"),
+  unitType: varchar("unit_type", { length: 50 }).default("each"),
+  unitPrice: decimal("unit_price", { precision: 12, scale: 2 }).notNull(),
+  totalPrice: decimal("total_price", { precision: 12, scale: 2 }).notNull(),
+  markupPercentage: decimal("markup_percentage", { precision: 5, scale: 2 }).default("0"),
+  notes: text("notes"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const customersRelations = relations(customers, ({ many }) => ({
   projects: many(projects),
@@ -569,6 +590,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   workOrders: many(workOrders),
   vendorBills: many(vendorBills),
   customerInvoices: many(customerInvoices),
+  bidItems: many(projectBidItems),
 }));
 
 export const projectTodosRelations = relations(projectTodos, ({ one }) => ({
@@ -825,6 +847,21 @@ export const paymentRecordsRelations = relations(paymentRecords, ({ one }) => ({
   }),
 }));
 
+export const projectBidItemsRelations = relations(projectBidItems, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectBidItems.projectId],
+    references: [projects.id],
+  }),
+  category: one(costCategories, {
+    fields: [projectBidItems.categoryId],
+    references: [costCategories.id],
+  }),
+  costItem: one(costItems, {
+    fields: [projectBidItems.costItemId],
+    references: [costItems.id],
+  }),
+}));
+
 // Insert schemas
 export const insertCustomerSchema = createInsertSchema(customers).omit({
   id: true,
@@ -988,6 +1025,12 @@ export const insertPaymentRecordSchema = createInsertSchema(paymentRecords).omit
   createdAt: true,
 });
 
+export const insertProjectBidItemSchema = createInsertSchema(projectBidItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -1056,3 +1099,5 @@ export type CustomerInvoiceItem = typeof customerInvoiceItems.$inferSelect;
 export type InsertCustomerInvoiceItem = z.infer<typeof insertCustomerInvoiceItemSchema>;
 export type PaymentRecord = typeof paymentRecords.$inferSelect;
 export type InsertPaymentRecord = z.infer<typeof insertPaymentRecordSchema>;
+export type ProjectBidItem = typeof projectBidItems.$inferSelect;
+export type InsertProjectBidItem = z.infer<typeof insertProjectBidItemSchema>;

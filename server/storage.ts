@@ -31,6 +31,7 @@ import {
   customerInvoices,
   customerInvoiceItems,
   paymentRecords,
+  projectBidItems,
   type User,
   type UpsertUser,
   type Company,
@@ -93,6 +94,8 @@ import {
   type InsertCustomerInvoiceItem,
   type PaymentRecord,
   type InsertPaymentRecord,
+  type ProjectBidItem,
+  type InsertProjectBidItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, or, like, count } from "drizzle-orm";
@@ -1412,6 +1415,99 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(paymentRecords)
       .where(eq(paymentRecords.id, id));
+  }
+
+  // Project Bid Item operations
+  async getProjectBidItems(projectId: number): Promise<ProjectBidItem[]> {
+    return await db
+      .select()
+      .from(projectBidItems)
+      .where(eq(projectBidItems.projectId, projectId))
+      .orderBy(projectBidItems.sortOrder, projectBidItems.name);
+  }
+
+  async createProjectBidItem(item: InsertProjectBidItem): Promise<ProjectBidItem> {
+    const [newItem] = await db
+      .insert(projectBidItems)
+      .values(item)
+      .returning();
+    return newItem;
+  }
+
+  async updateProjectBidItem(id: number, updates: Partial<InsertProjectBidItem>): Promise<ProjectBidItem> {
+    const [updatedItem] = await db
+      .update(projectBidItems)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(projectBidItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteProjectBidItem(id: number): Promise<void> {
+    await db
+      .delete(projectBidItems)
+      .where(eq(projectBidItems.id, id));
+  }
+
+  async createProjectBidFromCostItems(projectId: number, companyId: number, bidItems: Array<{
+    costItemId: number;
+    quantity: number;
+    markupPercentage?: number;
+  }>): Promise<ProjectBidItem[]> {
+    const createdItems: ProjectBidItem[] = [];
+    
+    for (const bidItem of bidItems) {
+      // Get the cost item details
+      const costItem = await this.getCostItem(bidItem.costItemId);
+      if (!costItem) continue;
+      
+      const quantity = bidItem.quantity;
+      const markup = bidItem.markupPercentage || 0;
+      const basePrice = parseFloat(costItem.costPerUnit);
+      const unitPrice = basePrice + (basePrice * markup / 100);
+      const totalPrice = unitPrice * quantity;
+      
+      const newBidItem = await this.createProjectBidItem({
+        companyId,
+        projectId,
+        categoryId: costItem.categoryId,
+        costItemId: costItem.id,
+        name: costItem.name,
+        description: costItem.description,
+        quantity: quantity.toString(),
+        unitType: costItem.unitType,
+        unitPrice: unitPrice.toString(),
+        totalPrice: totalPrice.toString(),
+        markupPercentage: markup.toString(),
+        sortOrder: 0,
+      });
+      
+      createdItems.push(newBidItem);
+    }
+    
+    // Update project bid amount
+    const totalBidAmount = createdItems.reduce((sum, item) => sum + parseFloat(item.totalPrice), 0);
+    await this.updateProject(projectId, { bidAmount: totalBidAmount.toString() });
+    
+    return createdItems;
+  }
+
+  async calculateProjectActualCosts(projectId: number): Promise<number> {
+    // Calculate actual costs from paid vendor bills
+    const paidBills = await db
+      .select()
+      .from(vendorBills)
+      .where(and(
+        eq(vendorBills.projectId, projectId),
+        eq(vendorBills.status, 'paid')
+      ));
+    
+    const totalCosts = paidBills.reduce((sum, bill) => sum + parseFloat(bill.totalAmount || '0'), 0);
+    
+    // Update project actual cost
+    await this.updateProject(projectId, { actualCost: totalCosts.toString() });
+    
+    return totalCosts;
   }
 }
 
