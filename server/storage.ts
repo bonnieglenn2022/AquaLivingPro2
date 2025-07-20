@@ -220,7 +220,7 @@ export interface IStorage {
   updateCostCategory(id: number, updates: Partial<InsertCostCategory>): Promise<CostCategory>;
   deleteCostCategory(id: number): Promise<void>;
 
-  getCostItems(categoryId?: number): Promise<CostItem[]>;
+  getCostItems(companyId?: number, categoryId?: number): Promise<CostItem[]>;
   getCostItem(id: number): Promise<CostItem | undefined>;
   createCostItem(item: InsertCostItem): Promise<CostItem>;
   updateCostItem(id: number, updates: Partial<InsertCostItem>): Promise<CostItem>;

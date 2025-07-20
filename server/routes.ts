@@ -1158,9 +1158,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
       const { categoryId } = req.query;
       const items = await storage.getCostItems(
-        company?.id, 
+        company.id, 
         categoryId ? parseInt(categoryId as string) : undefined
       );
       res.json(items);
@@ -1198,9 +1201,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/cost-items/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/cost-items/:id', isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      const company = await storage.getCompanyByOwnerId(userId);
+      if (!company) {
+        return res.status(400).json({ message: "Company not found" });
+      }
+      
+      // Verify the cost item belongs to this company
+      const costItem = await storage.getCostItem(id);
+      if (!costItem) {
+        return res.status(404).json({ message: "Cost item not found" });
+      }
+      if (costItem.companyId !== company.id) {
+        return res.status(403).json({ message: "Unauthorized to delete this cost item" });
+      }
+      
       await storage.deleteCostItem(id);
       res.status(204).send();
     } catch (error) {
