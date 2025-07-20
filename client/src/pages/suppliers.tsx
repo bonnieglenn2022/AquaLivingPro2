@@ -72,9 +72,10 @@ export default function Suppliers() {
       });
     },
     onError: (error) => {
+      console.error("Create supplier error:", error);
       toast({
         title: "Error",
-        description: "Failed to create supplier",
+        description: error.message || "Failed to create supplier",
         variant: "destructive",
       });
     },

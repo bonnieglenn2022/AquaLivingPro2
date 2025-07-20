@@ -75,9 +75,10 @@ export default function Subcontractors() {
       });
     },
     onError: (error) => {
+      console.error("Create subcontractor error:", error);
       toast({
         title: "Error",
-        description: "Failed to create subcontractor",
+        description: error.message || "Failed to create subcontractor",
         variant: "destructive",
       });
     },
