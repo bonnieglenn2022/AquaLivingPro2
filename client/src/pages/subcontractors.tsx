@@ -64,8 +64,12 @@ export default function Subcontractors() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertSubcontractor) => apiRequest("POST", "/api/subcontractors", data),
-    onSuccess: () => {
+    mutationFn: (data: InsertSubcontractor) => {
+      console.log("Creating subcontractor with data:", data);
+      return apiRequest("POST", "/api/subcontractors", data);
+    },
+    onSuccess: (newSubcontractor) => {
+      console.log("Subcontractor created successfully:", newSubcontractor);
       queryClient.invalidateQueries({ queryKey: ["/api/subcontractors"] });
       setIsDialogOpen(false);
       form.reset();
@@ -76,6 +80,7 @@ export default function Subcontractors() {
     },
     onError: (error) => {
       console.error("Create subcontractor error:", error);
+      console.error("Full error details:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to create subcontractor",
