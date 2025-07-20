@@ -171,8 +171,9 @@ export function AppHeader() {
                         {item.title}
                       </NavigationMenuTrigger>
                       <NavigationMenuContent>
-                        <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                          {item.items?.map((subItem) => (
+                        <div className="max-h-[80vh] overflow-y-auto">
+                          <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                            {item.items?.map((subItem) => (
                             <li key={subItem.title}>
                               <Link
                                 href={subItem.href}
@@ -192,8 +193,9 @@ export function AppHeader() {
                                 </p>
                               </Link>
                             </li>
-                          ))}
-                        </ul>
+                            ))}
+                          </ul>
+                        </div>
                       </NavigationMenuContent>
                     </>
                   ) : (
