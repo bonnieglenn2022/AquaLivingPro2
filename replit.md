@@ -13,6 +13,14 @@ Single vCard import functionality: User prefers importing individual contacts fr
 
 ## Recent Changes
 
+**JobTread-Style Header Navigation Implementation** (January 20, 2025)
+- Replaced sidebar navigation with comprehensive JobTread-style header navigation system  
+- Created AppHeader component with dropdown menus for Sales & Estimating, Project Management, Job Finances, and Vendors & Subs sections
+- Fixed critical API parameter order bug preventing supplier and subcontractor creation
+- Updated all pages (dashboard, suppliers, subcontractors) to use clean layout without sidebar components
+- Implemented persistent header navigation across all authenticated pages
+- Enhanced user experience with comprehensive navigation structure matching JobTread's design patterns
+
 **Cost Catalog System Implementation** (January 14, 2025)
 - Replaced cost management page with comprehensive JobTread-style Cost Catalog
 - Created centralized cost management system with categories and items organization

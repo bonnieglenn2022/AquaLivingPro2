@@ -31,7 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSubcontractorSchema, type Subcontractor, type InsertSubcontractor } from "@shared/schema";
 import { Plus, Pencil, Trash2, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+
 import { apiRequest } from "@/lib/queryClient";
 import { Badge } from "@/components/ui/badge";
 
@@ -98,9 +98,10 @@ export default function Subcontractors() {
       });
     },
     onError: (error) => {
+      console.error("Update subcontractor error:", error);
       toast({
         title: "Error",
-        description: "Failed to update subcontractor",
+        description: error.message || "Failed to update subcontractor",
         variant: "destructive",
       });
     },
@@ -116,9 +117,10 @@ export default function Subcontractors() {
       });
     },
     onError: (error) => {
+      console.error("Delete subcontractor error:", error);
       toast({
         title: "Error",
-        description: "Failed to delete subcontractor",
+        description: error.message || "Failed to delete subcontractor",
         variant: "destructive",
       });
     },
@@ -179,10 +181,8 @@ export default function Subcontractors() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <AppSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden ml-16">
-        <div className="flex-1 overflow-y-auto p-6">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Subcontractors</h1>
             <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -455,7 +455,6 @@ export default function Subcontractors() {
             </Table>
           </div>
         </div>
-      </div>
     </div>
   );
 }

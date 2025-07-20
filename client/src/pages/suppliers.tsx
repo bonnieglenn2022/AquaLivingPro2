@@ -31,7 +31,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertSupplierSchema, type Supplier, type InsertSupplier } from "@shared/schema";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { AppSidebar } from "@/components/layout/AppSidebar";
+
 import { apiRequest } from "@/lib/queryClient";
 
 export default function Suppliers() {
@@ -158,10 +158,8 @@ export default function Suppliers() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      <AppSidebar />
-      <div className="flex-1 flex flex-col overflow-hidden ml-16">
-        <div className="flex-1 overflow-y-auto p-6">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Suppliers</h1>
             <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -394,7 +392,6 @@ export default function Suppliers() {
             </Table>
           </div>
         </div>
-      </div>
     </div>
   );
 }

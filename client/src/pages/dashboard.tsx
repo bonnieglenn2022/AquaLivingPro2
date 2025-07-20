@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { AppSidebar } from "@/components/layout/AppSidebar";
-import { Header } from "@/components/layout/Header";
+
 import { MetricsCards } from "@/components/dashboard/MetricsCards";
 import { ProjectsTable } from "@/components/dashboard/ProjectsTable";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
@@ -18,7 +17,7 @@ import type { Project } from "@shared/schema";
 export default function Dashboard() {
   const { toast } = useToast();
   const { isAuthenticated, isLoading } = useAuth();
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
 
   // Get first active project for project status display
   const { data: projects = [] } = useQuery({
@@ -62,19 +61,8 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      <AppSidebar 
-        isMobileOpen={isMobileSidebarOpen} 
-        onMobileClose={() => setIsMobileSidebarOpen(false)} 
-      />
-      
-      <main className="flex-1 overflow-hidden">
-        <Header 
-          title="Project Dashboard" 
-          onMobileMenuToggle={() => setIsMobileSidebarOpen(true)}
-        />
-        
-        <div className="p-6 overflow-y-auto h-full">
+    <div className="min-h-screen bg-slate-50">
+      <div className="container mx-auto px-4 py-6">
           {/* Key Metrics Cards */}
           <div className="mb-8">
             <MetricsCards />
@@ -102,7 +90,6 @@ export default function Dashboard() {
             <RecentLeads />
           </div>
         </div>
-      </main>
     </div>
   );
 }
