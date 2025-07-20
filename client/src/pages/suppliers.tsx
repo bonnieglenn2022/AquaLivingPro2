@@ -61,7 +61,7 @@ export default function Suppliers() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertSupplier) => apiRequest("/api/suppliers", "POST", data),
+    mutationFn: (data: InsertSupplier) => apiRequest("POST", "/api/suppliers", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       setIsDialogOpen(false);
@@ -83,7 +83,7 @@ export default function Suppliers() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<InsertSupplier> }) =>
-      apiRequest(`/api/suppliers/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/suppliers/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       setIsDialogOpen(false);
@@ -104,7 +104,7 @@ export default function Suppliers() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/suppliers/${id}`, "DELETE"),
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/suppliers/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       toast({

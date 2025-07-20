@@ -64,7 +64,7 @@ export default function Subcontractors() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: InsertSubcontractor) => apiRequest("/api/subcontractors", "POST", data),
+    mutationFn: (data: InsertSubcontractor) => apiRequest("POST", "/api/subcontractors", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/subcontractors"] });
       setIsDialogOpen(false);
@@ -86,7 +86,7 @@ export default function Subcontractors() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<InsertSubcontractor> }) =>
-      apiRequest(`/api/subcontractors/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/subcontractors/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/subcontractors"] });
       setIsDialogOpen(false);
@@ -107,7 +107,7 @@ export default function Subcontractors() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/subcontractors/${id}`, "DELETE"),
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/subcontractors/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/subcontractors"] });
       toast({
