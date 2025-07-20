@@ -125,14 +125,13 @@ export default function Reports() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-50">
-      <AppSidebar />
-      
-      <main className="flex-1 overflow-hidden">
-        <Header title="Reports & Analytics" />
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
+        </div>
         
-        <div className="p-6 overflow-y-auto h-full">
-          {/* Header Actions */}
+        {/* Header Actions */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
               <Button variant="outline" size="sm">
@@ -148,23 +147,23 @@ export default function Reports() {
               <Download className="w-4 h-4 mr-2" />
               Export All
             </Button>
-          </div>
+        </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {quickStats.map((stat, index) => {
-              const IconComponent = stat.icon;
-              return (
-                <Card key={index} className="border-slate-200">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-slate-600">{stat.title}</p>
-                        <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
-                        <p className={`text-sm ${stat.trend === 'up' ? 'text-garden-green' : 'text-coral-red'}`}>
-                          {stat.change} from last month
-                        </p>
-                      </div>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {quickStats.map((stat, index) => {
+            const IconComponent = stat.icon;
+            return (
+              <Card key={index} className="border-slate-200">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-slate-600">{stat.title}</p>
+                      <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
+                      <p className={`text-sm ${stat.trend === 'up' ? 'text-garden-green' : 'text-coral-red'}`}>
+                        {stat.change} from last month
+                      </p>
+                    </div>
                       <div className="w-12 h-12 bg-pool-blue/10 rounded-lg flex items-center justify-center">
                         <IconComponent className="w-6 h-6 text-pool-blue" />
                       </div>
@@ -173,10 +172,10 @@ export default function Reports() {
                 </Card>
               );
             })}
-          </div>
+        </div>
 
-          {/* Report Types */}
-          <Card className="mb-8">
+        {/* Report Types */}
+        <Card className="mb-8">
             <CardHeader>
               <CardTitle>Available Reports</CardTitle>
             </CardHeader>
@@ -204,11 +203,11 @@ export default function Reports() {
                 })}
               </div>
             </CardContent>
-          </Card>
+        </Card>
 
-          {/* Analytics Dashboard Preview */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card>
+        {/* Analytics Dashboard Preview */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card>
               <CardHeader>
                 <CardTitle>Revenue Trends</CardTitle>
               </CardHeader>
@@ -237,10 +236,10 @@ export default function Reports() {
                 </div>
               </CardContent>
             </Card>
-          </div>
+        </div>
 
-          {/* Pool Industry Insights */}
-          <Card className="mt-8">
+        {/* Pool Industry Insights */}
+        <Card className="mt-8">
             <CardHeader>
               <CardTitle>Pool Industry Insights</CardTitle>
             </CardHeader>
@@ -277,9 +276,8 @@ export default function Reports() {
                 </div>
               </div>
             </CardContent>
-          </Card>
-        </div>
-      </main>
+        </Card>
+      </div>
     </div>
   );
 }

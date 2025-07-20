@@ -161,7 +161,7 @@ export function AppHeader() {
           </div>
 
           {/* Main Navigation */}
-          <NavigationMenu className="hidden lg:flex">
+          <NavigationMenu className="hidden md:flex">
             <NavigationMenuList>
               {navigationItems.map((item) => (
                 <NavigationMenuItem key={item.title}>
