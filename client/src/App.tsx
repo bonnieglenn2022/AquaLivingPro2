@@ -58,21 +58,23 @@ function Router() {
           <div className="min-h-screen bg-background">
             <AppHeader />
             <main className="flex-1">
-              <Route path="/" component={Dashboard} />
-              <Route path="/dashboard" component={Dashboard} />
-              <Route path="/projects" component={Projects} />
-              <Route path="/leads" component={Leads} />
-              <Route path="/estimates" component={Estimates} />
-              <Route path="/scheduling" component={Scheduling} />
-              <Route path="/documents" component={Documents} />
-              <Route path="/vendors" component={Vendors} />
-              <Route path="/reports" component={Reports} />
-              <Route path="/cost-catalog" component={CostCatalog} />
-              <Route path="/finances" component={Finances} />
-              <Route path="/suppliers" component={Suppliers} />
-              <Route path="/subcontractors" component={Subcontractors} />
-              <Route path="/company-setup" component={CompanySetup} />
-              <Route component={NotFound} />
+              <Switch>
+                <Route path="/" component={Dashboard} />
+                <Route path="/dashboard" component={Dashboard} />
+                <Route path="/projects" component={Projects} />
+                <Route path="/leads" component={Leads} />
+                <Route path="/estimates" component={Estimates} />
+                <Route path="/scheduling" component={Scheduling} />
+                <Route path="/documents" component={Documents} />
+                <Route path="/vendors" component={Vendors} />
+                <Route path="/reports" component={Reports} />
+                <Route path="/cost-catalog" component={CostCatalog} />
+                <Route path="/finances" component={Finances} />
+                <Route path="/suppliers" component={Suppliers} />
+                <Route path="/subcontractors" component={Subcontractors} />
+                <Route path="/company-setup" component={CompanySetup} />
+                <Route component={NotFound} />
+              </Switch>
             </main>
           </div>
         </>
