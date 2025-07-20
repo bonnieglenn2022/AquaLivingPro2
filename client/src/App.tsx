@@ -54,10 +54,10 @@ function Router() {
         <Route path="*" component={CompanySetup} />
       ) : (
         // User has a company - show normal app with header
-        <div className="min-h-screen bg-background">
-          <AppHeader />
-          <main className="flex-1">
-            <Switch>
+        <>
+          <div className="min-h-screen bg-background">
+            <AppHeader />
+            <main className="flex-1">
               <Route path="/" component={Dashboard} />
               <Route path="/dashboard" component={Dashboard} />
               <Route path="/projects" component={Projects} />
@@ -73,9 +73,9 @@ function Router() {
               <Route path="/subcontractors" component={Subcontractors} />
               <Route path="/company-setup" component={CompanySetup} />
               <Route component={NotFound} />
-            </Switch>
-          </main>
-        </div>
+            </main>
+          </div>
+        </>
       )}
       <Route component={NotFound} />
     </Switch>

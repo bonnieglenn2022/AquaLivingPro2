@@ -44,6 +44,8 @@ export function AppHeader() {
   const { user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
 
+
+
   const navigationItems = [
     {
       title: "Dashboard",
@@ -195,8 +197,9 @@ export function AppHeader() {
                       </NavigationMenuContent>
                     </>
                   ) : (
-                    <Link href={item.href}>
-                      <NavigationMenuLink
+                    <NavigationMenuLink asChild>
+                      <Link
+                        href={item.href}
                         className={cn(
                           navigationMenuTriggerStyle(),
                           "h-9",
@@ -205,8 +208,8 @@ export function AppHeader() {
                       >
                         <item.icon className="mr-2 h-4 w-4" />
                         {item.title}
-                      </NavigationMenuLink>
-                    </Link>
+                      </Link>
+                    </NavigationMenuLink>
                   )}
                 </NavigationMenuItem>
               ))}
